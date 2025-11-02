@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import Navbar from '../components/navbar';
-import Sidebar from '../components/Sidebar';
+import Navbar from '../components/Navbar/Navbar.jsx';
+import Sidebar from '../components/Sidebar/Sidebar.jsx';
 import { Upload } from 'lucide-react';
 
 export default function Dashboard() {
