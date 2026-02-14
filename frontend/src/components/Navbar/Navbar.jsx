@@ -1,27 +1,36 @@
 import React, { useState } from "react";
-import { Search, Bell, Settings, User } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Search, Bell, Settings, User, LogOut } from "lucide-react";
 
-export default function Navbar() {
+export default function Navbar({ onLogout }) {
   const [profileOpen, setProfileOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    if (onLogout) {
+      onLogout();
+    }
+    navigate("/");
+  };
 
   return (
     <nav className="bg-white shadow-md px-6 py-3 flex items-center justify-between">
       {/* Left Section: Logo + Links */}
       <div className="flex items-center space-x-6">
-        <a href="/" className="text-xl font-bold text-green-700">
+        <a href="/dashboard" className="text-xl font-bold text-green-700">
           AgriFuel Nexus
         </a>
         
       </div>
       <div className="relative w-1 shadow-md space-x-10 flex items-center justify-between">
-        <a href="/" className="text-gray-700 hover:text-green-700">
-          Home
+        <a href="/dashboard" className="text-gray-700 hover:text-green-700">
+          Dashboard
         </a>
-        <a href="/about" className="text-gray-700 hover:text-green-700">
-          About
+        <a href="/crops" className="text-gray-700 hover:text-green-700">
+          My Crops
         </a>
-        <a href="/innovation" className="text-gray-700 hover:text-green-700">
-          Innovation
+        <a href="/marketplace" className="text-gray-700 hover:text-green-700">
+          Marketplace
         </a>
       </div>
 
@@ -67,12 +76,13 @@ export default function Navbar() {
               >
                 Settings
               </a>
-              <a
-                href="/logout"
-                className="block px-4 py-2 text-red-600 hover:bg-gray-100"
+              <button
+                onClick={handleLogout}
+                className="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100 flex items-center gap-2"
               >
+                <LogOut size={18} />
                 Logout
-              </a>
+              </button>
             </div>
           )}
         </div>

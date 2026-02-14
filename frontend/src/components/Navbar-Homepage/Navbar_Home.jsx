@@ -2,7 +2,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { LogIn, LogOut } from "lucide-react";
 import "./Navbar_Home.css";
 
-export default function Navbar() {
+export default function Navbar({ onLoginClick }) {
   const location = useLocation();
   const navigate = useNavigate();
   const token = localStorage.getItem("af_token");
@@ -10,6 +10,8 @@ export default function Navbar() {
   const logout = () => {
     localStorage.removeItem("af_token");
     localStorage.removeItem("af_user");
+    localStorage.removeItem("af_loginType");
+    localStorage.removeItem("af_userType");
     navigate("/");
   };
 
@@ -22,9 +24,10 @@ export default function Navbar() {
         </div>
 
         <nav className="navbar-links">
-          <Link to="/" className={location.pathname === "/" ? "active" : ""}>Home</Link>
-          <Link to="/about" className={location.pathname === "/about" ? "active" : ""}>About</Link>
-          <Link to="/dashboard" className={location.pathname === "/dashboard" ? "active" : ""}>Dashboard</Link>
+          <a href="#home" className={location.pathname === "/" ? "active" : ""}>Home</a>
+          <a href="#about" className="">About</a>
+          <a href="#services" className="">Services</a>
+          <a href="#contact" className="">Contact</a>
         </nav>
 
         {token ? (
@@ -33,10 +36,10 @@ export default function Navbar() {
             <span>Logout</span>
           </button>
         ) : (
-          <Link to="/login" className="login-btn">
+          <button className="login-btn" onClick={onLoginClick}>
             <LogIn size={16} />
             <span>Login</span>
-          </Link>
+          </button>
         )}
       </div>
     </header>

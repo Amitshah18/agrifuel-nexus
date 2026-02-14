@@ -3,7 +3,7 @@ import Navbar from '../components/Navbar/Navbar.jsx';
 import Sidebar from '../components/Sidebar/Sidebar.jsx';
 import { Upload } from 'lucide-react';
 
-export default function Dashboard() {
+export default function Dashboard({ onLogout }) {
   const [image, setImage] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -16,7 +16,7 @@ export default function Dashboard() {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
-      <Navbar onMenuClick={() => setIsSidebarOpen(true)} />
+      <Navbar onMenuClick={() => setIsSidebarOpen(true)} onLogout={onLogout} />
       <div className="flex flex-1">
         <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
