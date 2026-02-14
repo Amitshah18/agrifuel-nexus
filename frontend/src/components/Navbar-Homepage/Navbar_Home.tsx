@@ -2,7 +2,11 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { LogIn, LogOut } from "lucide-react";
 import "./Navbar_Home.css";
 
-export default function Navbar({ onLoginClick }) {
+interface NavbarProps {
+  onLoginClick: () => void;
+}
+
+export default function Navbar({ onLoginClick }: NavbarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const token = localStorage.getItem("af_token");

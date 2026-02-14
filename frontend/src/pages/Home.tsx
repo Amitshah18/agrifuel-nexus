@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, FC } from "react";
 import { Link } from "react-router-dom";
+// @ts-ignore
 import farmImg from "../assets/homePic.png";
-import NavbarHome from "../components/Navbar-Homepage/Navbar_Home.jsx";
-import Footer from "../components/Footer/Footer.jsx";
-import LoginModal from "../components/Login/LoginModal.jsx";
-import SignupModal from "../components/Signup/SignupModal.jsx";
+import NavbarHome from "../components/Navbar-Homepage/Navbar_Home";
+import Footer from "../components/Footer/Footer";
+import LoginModal from "../components/Login/LoginModal";
+import SignupModal from "../components/Signup/SignupModal";
+import "./Home.css";
 import {
   ArrowRight,
   Leaf,
@@ -12,22 +14,49 @@ import {
   TrendingUp,
   ChevronLeft,
   ChevronRight,
+  LucideIcon,
 } from "lucide-react";
 
-export default function Home() {
-  const [showLogin, setShowLogin] = useState(false);
-  const [showSignup, setShowSignup] = useState(false);
-  const [signupType, setSignupType] = useState(null);
-  const [signupUserType, setSignupUserType] = useState(null);
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [servicesSlide, setServicesSlide] = useState(0);
+interface Slide {
+  id: number;
+  title: string;
+  description: string;
+  icon: LucideIcon;
+}
+
+interface Service {
+  id: number;
+  title: string;
+  description: string;
+  features: string[];
+}
+
+interface TeamMember {
+  name: string;
+  role: string;
+  contribution: string;
+}
+
+interface VideoData {
+  title: string;
+  videoId: string;
+  thumbnail: string;
+}
+
+const Home: FC = () => {
+  const [showLogin, setShowLogin] = useState<boolean>(false);
+  const [showSignup, setShowSignup] = useState<boolean>(false);
+  const [signupType, setSignupType] = useState<string | null>(null);
+  const [signupUserType, setSignupUserType] = useState<string | null>(null);
+  const [currentSlide, setCurrentSlide] = useState<number>(0);
+  const [servicesSlide, setServicesSlide] = useState<number>(0);
 
   const handleSignupComplete = () => {
     setShowSignup(false);
     setShowLogin(true);
   };
 
-  const handleOpenSignupFromLogin = (type, userType = null) => {
+  const handleOpenSignupFromLogin = (type: string, userType: string | null = null) => {
     setSignupType(type);
     setSignupUserType(userType);
     setShowLogin(false);
@@ -35,7 +64,7 @@ export default function Home() {
   };
 
   // Hero slides
-  const slides = [
+  const slides: Slide[] = [
     {
       id: 1,
       title: "AI-Powered Plant Disease Detection",
@@ -57,7 +86,7 @@ export default function Home() {
   ];
 
   // Services data
-  const services = [
+  const services: Service[] = [
     {
       id: 1,
       title: "Plant Disease Detection",
@@ -97,14 +126,14 @@ export default function Home() {
   ];
 
   // Team members
-  const teamMembers = [
+  const teamMembers: TeamMember[] = [
     {
       name: "Amit Shah",
       role: "Co-Founder & Tech Lead",
       contribution: "Backend infrastructure, AI integration",
     },
     {
-      name: "Stuti ",
+      name: "Stuti",
       role: "Co-Founder & Frontend Lead",
       contribution: "UI/UX design, frontend development",
     },
@@ -116,7 +145,7 @@ export default function Home() {
   ];
 
   // Video thumbnails (YouTube videos)
-  const videos = [
+  const videos: VideoData[] = [
     {
       title: "AgriFuel Nexus Overview",
       videoId: "dQw4w9WgXcQ",
@@ -353,63 +382,8 @@ export default function Home() {
             Our Services
           </h2>
 
-          {/* Services Carousel */}
-          <div className="relative">
-            <div className="overflow-hidden">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {services.map((service, idx) => (
-                  <div
-                    key={service.id}
-                    className={`rounded-2xl shadow-lg overflow-hidden transition-opacity transform ${
-                      idx === servicesSlide % services.length
-                        ? "block md:col-span-1"
-                        : "hidden"
-                    }`}
-                  >
-                    <div className="bg-gradient-to-br from-green-400 to-blue-500 h-48 flex items-center justify-center text-white">
-                      <div className="text-6xl">
-                        {idx === 0 ? "🔍" : idx === 1 ? "💊" : "🛒"}
-                      </div>
-                    </div>
-                    <div className="bg-white p-8">
-                      <h3 className="text-2xl font-bold mb-3 text-gray-900">
-                        {service.title}
-                      </h3>
-                      <p className="text-gray-600 mb-5">{service.description}</p>
-                      <ul className="space-y-2">
-                        {service.features.map((feature, fIdx) => (
-                          <li
-                            key={fIdx}
-                            className="flex items-center gap-2 text-gray-700"
-                          >
-                            <span className="text-green-600 font-bold">✓</span>
-                            {feature}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Carousel Controls - visible on all devices for mobile, hidden md up */}
-            <button
-              onClick={prevServicesSlide}
-              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-12 md:-translate-x-16 bg-green-600 hover:bg-green-700 text-white p-2 rounded-full transition"
-            >
-              <ChevronLeft className="h-6 w-6" />
-            </button>
-            <button
-              onClick={nextServicesSlide}
-              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-12 md:translate-x-16 bg-green-600 hover:bg-green-700 text-white p-2 rounded-full transition"
-            >
-              <ChevronRight className="h-6 w-6" />
-            </button>
-          </div>
-
           {/* All Services Grid */}
-          <div className="mt-16 grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-8">
             {services.map((service) => (
               <div
                 key={service.id}
@@ -554,7 +528,7 @@ export default function Home() {
                   </label>
                   <textarea
                     placeholder="Your message..."
-                    rows="4"
+                    rows={4}
                     className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 focus:outline-none"
                   ></textarea>
                 </div>
@@ -627,8 +601,8 @@ export default function Home() {
           setSignupUserType(null);
         }} 
         onSignupComplete={handleSignupComplete}
-        initialSignupType={signupType}
-        initialUserType={signupUserType}
+        initialSignupType={signupType as any}
+        initialUserType={signupUserType as any}
       />
       <LoginModal 
         isOpen={showLogin} 
@@ -637,4 +611,6 @@ export default function Home() {
       />
     </div>
   );
-}
+};
+
+export default Home;

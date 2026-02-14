@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, FC } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   Home,
@@ -11,32 +11,44 @@ import {
   Upload,
   Settings,
   PanelLeft,
+  LucideIcon,
 } from "lucide-react";
 import "./Sidebar.css";
 
-const mainItems = [
+interface NavItem {
+  title: string;
+  url: string;
+  icon: LucideIcon;
+}
+
+interface NavSection {
+  label: string;
+  items: NavItem[];
+}
+
+const mainItems: NavItem[] = [
   { title: "Dashboard", url: "/dashboard", icon: Home },
   { title: "AI Disease Detection", url: "/dashboard/detection", icon: Microscope },
   { title: "Farming Advisory", url: "/dashboard/advisory", icon: Lightbulb },
   { title: "Crop Health", url: "/dashboard/health", icon: Leaf },
 ];
 
-const marketplaceItems = [
+const marketplaceItems: NavItem[] = [
   { title: "My Listings", url: "/dashboard/listings", icon: ShoppingCart },
   { title: "Marketplace", url: "/dashboard/marketplace", icon: TrendingUp },
   { title: "Analytics", url: "/dashboard/analytics", icon: BarChart3 },
 ];
 
-const systemItems = [
+const systemItems: NavItem[] = [
   { title: "Upload Data", url: "/dashboard/upload", icon: Upload },
   { title: "Settings", url: "/dashboard/settings", icon: Settings },
 ];
 
-export default function Sidebar() {
-  const [collapsed, setCollapsed] = useState(false);
+const Sidebar: FC = () => {
+  const [collapsed, setCollapsed] = useState<boolean>(false);
   const location = useLocation();
 
-  const navItems = [
+  const navItems: NavSection[] = [
     { label: "AI Farming", items: mainItems },
     { label: "Marketplace", items: marketplaceItems },
     { label: "System", items: systemItems },
@@ -68,13 +80,14 @@ export default function Sidebar() {
             <ul className="nav-list">
               {section.items.map((item) => {
                 const active = location.pathname === item.url;
+                const Icon = item.icon;
                 return (
                   <li key={item.title}>
                     <NavLink
                       to={item.url}
                       className={`nav-item ${active ? "active" : ""}`}
                     >
-                      <item.icon size={18} />
+                      <Icon size={18} />
                       {!collapsed && <span>{item.title}</span>}
                     </NavLink>
                   </li>
@@ -86,4 +99,6 @@ export default function Sidebar() {
       </nav>
     </aside>
   );
-}
+};
+
+export default Sidebar;

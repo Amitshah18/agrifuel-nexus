@@ -1,6 +1,9 @@
 import { Heart } from "lucide-react";
+import "./Footer.css";
 
-export default function Footer() {
+interface FooterProps {}
+
+export default function Footer({}: FooterProps) {
   const currentYear = new Date().getFullYear();
 
   return (

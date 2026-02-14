@@ -1,9 +1,15 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Bell, Settings, User, LogOut } from "lucide-react";
+import "./Navbar.css";
 
-export default function Navbar({ onLogout }) {
-  const [profileOpen, setProfileOpen] = useState(false);
+interface NavbarProps {
+  onLogout?: () => void;
+  onMenuClick?: () => void;
+}
+
+export default function Navbar({ onLogout, onMenuClick }: NavbarProps) {
+  const [profileOpen, setProfileOpen] = useState<boolean>(false);
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -53,39 +59,33 @@ export default function Navbar({ onLogout }) {
           <Settings size={22} />
         </button>
 
-        {/* Profile Dropdown */}
-        <div className="relative">
-          <button
-            className="text-gray-600 hover:text-green-700"
-            onClick={() => setProfileOpen(!profileOpen)}
-          >
-            <User size={22} />
-          </button>
+        {/* Profile Menu */}
+        <button
+          onClick={() => setProfileOpen(!profileOpen)}
+          className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center hover:bg-gray-400 transition"
+        >
+          <User size={20} />
+        </button>
 
-          {profileOpen && (
-            <div className="absolute right-0 mt-2 w-40 bg-white shadow-lg rounded-lg border">
-              <a
-                href="/profile"
-                className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
-              >
-                Profile
-              </a>
-              <a
-                href="/settings"
-                className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
-              >
-                Settings
-              </a>
-              <button
-                onClick={handleLogout}
-                className="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100 flex items-center gap-2"
-              >
-                <LogOut size={18} />
-                Logout
-              </button>
-            </div>
-          )}
-        </div>
+        {profileOpen && (
+          <div className="absolute right-0 top-12 bg-white border border-gray-200 rounded-lg shadow-lg w-40 z-50">
+            <button className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2">
+              <User size={18} />
+              Profile
+            </button>
+            <button className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2">
+              <Settings size={18} />
+              Settings
+            </button>
+            <button
+              onClick={handleLogout}
+              className="w-full text-left px-4 py-2 hover:bg-red-100 text-red-600 flex items-center gap-2 border-t"
+            >
+              <LogOut size={18} />
+              Logout
+            </button>
+          </div>
+        )}
       </div>
     </nav>
   );

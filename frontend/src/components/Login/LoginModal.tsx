@@ -1,17 +1,35 @@
-import { useState } from "react";
+import { useState, FC, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { X, ArrowRight } from "lucide-react";
+import "./login.css";
 
-export default function LoginModal({ isOpen, onClose, onSignupClick }) {
+interface LoginForm {
+  email: string;
+  password: string;
+}
+
+interface LoginResponse {
+  token: string;
+  user?: Record<string, any>;
+  message?: string;
+}
+
+interface LoginModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSignupClick?: (loginType: string, userType: string | null) => void;
+}
+
+const LoginModal: FC<LoginModalProps> = ({ isOpen, onClose, onSignupClick }) => {
   const navigate = useNavigate();
-  const [stage, setStage] = useState("loginType"); // loginType, userType, credentials
-  const [loginType, setLoginType] = useState(null); // 'marketplace' or 'dashboard'
-  const [userType, setUserType] = useState(null); // 'buyer' or 'seller' (for marketplace)
-  const [form, setForm] = useState({ email: "", password: "" });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [stage, setStage] = useState<"loginType" | "userType" | "credentials">("loginType");
+  const [loginType, setLoginType] = useState<string | null>(null);
+  const [userType, setUserType] = useState<string | null>(null);
+  const [form, setForm] = useState<LoginForm>({ email: "", password: "" });
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
 
-  const handleLoginTypeSelect = (type) => {
+  const handleLoginTypeSelect = (type: string) => {
     setLoginType(type);
     if (type === "marketplace") {
       setStage("userType");
@@ -21,7 +39,7 @@ export default function LoginModal({ isOpen, onClose, onSignupClick }) {
     setError("");
   };
 
-  const handleUserTypeSelect = (type) => {
+  const handleUserTypeSelect = (type: string) => {
     setUserType(type);
     setStage("credentials");
     setError("");
@@ -44,7 +62,7 @@ export default function LoginModal({ isOpen, onClose, onSignupClick }) {
     setForm({ email: "", password: "" });
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
     setLoading(true);
@@ -65,7 +83,7 @@ export default function LoginModal({ isOpen, onClose, onSignupClick }) {
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
+      const data: LoginResponse = await res.json();
       setLoading(false);
 
       if (!res.ok) {
@@ -76,9 +94,9 @@ export default function LoginModal({ isOpen, onClose, onSignupClick }) {
       if (data.token) {
         localStorage.setItem("af_token", data.token);
         localStorage.setItem("af_user", JSON.stringify(data.user || {}));
-        localStorage.setItem("af_loginType", loginType);
+        localStorage.setItem("af_loginType", loginType || "");
         if (loginType === "marketplace") {
-          localStorage.setItem("af_userType", userType);
+          localStorage.setItem("af_userType", userType || "");
         }
         onClose();
         navigate("/dashboard");
@@ -88,9 +106,7 @@ export default function LoginModal({ isOpen, onClose, onSignupClick }) {
     } catch (err) {
       console.error(err);
       setLoading(false);
-      setError(
-        "Network error — make sure the backend is running."
-      );
+      setError("Network error — make sure the backend is running.");
     }
   };
 
@@ -284,7 +300,7 @@ export default function LoginModal({ isOpen, onClose, onSignupClick }) {
                   type="button"
                   onClick={() => {
                     onClose();
-                    onSignupClick && onSignupClick(loginType, userType);
+                    onSignupClick && onSignupClick(loginType || "", userType);
                   }}
                   className="text-green-600 hover:underline font-medium bg-none border-none cursor-pointer"
                 >
@@ -297,4 +313,6 @@ export default function LoginModal({ isOpen, onClose, onSignupClick }) {
       </div>
     </div>
   );
-}
+};
+
+export default LoginModal;

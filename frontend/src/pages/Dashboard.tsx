@@ -1,14 +1,19 @@
-import React, { useState } from 'react';
-import Navbar from '../components/Navbar/Navbar.jsx';
-import Sidebar from '../components/Sidebar/Sidebar.jsx';
+import { useState, FC, ChangeEvent } from 'react';
+import Navbar from '../components/Navbar/Navbar';
+import Sidebar from '../components/Sidebar/Sidebar';
 import { Upload } from 'lucide-react';
+import "./Dashboard.css";
 
-export default function Dashboard({ onLogout }) {
-  const [image, setImage] = useState(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+interface DashboardProps {
+  onLogout: () => void;
+}
 
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
+const Dashboard: FC<DashboardProps> = ({ onLogout }) => {
+  const [image, setImage] = useState<string | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
+
+  const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (file) {
       setImage(URL.createObjectURL(file));
     }
@@ -18,7 +23,7 @@ export default function Dashboard({ onLogout }) {
     <div className="flex flex-col min-h-screen bg-gray-50">
       <Navbar onMenuClick={() => setIsSidebarOpen(true)} onLogout={onLogout} />
       <div className="flex flex-1">
-        <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+        <Sidebar />
 
         <main className="flex-1 p-6 md:p-8 lg:p-10 overflow-y-auto">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">Dashboard Overview</h1>
@@ -48,30 +53,18 @@ export default function Dashboard({ onLogout }) {
             <div className="grid grid-cols-1 gap-4">
               <div className="bg-white rounded-2xl shadow-sm p-4 flex flex-col items-center">
                 <h2 className="text-lg font-semibold">Active Projects</h2>
-                <p className="text-2xl font-bold text-green-600">12</p>
+                <p className="text-3xl font-bold text-green-600 mt-2">12</p>
               </div>
               <div className="bg-white rounded-2xl shadow-sm p-4 flex flex-col items-center">
-                <h2 className="text-lg font-semibold">Tasks</h2>
-                <p className="text-2xl font-bold text-blue-600">48</p>
-              </div>
-              <div className="bg-white rounded-2xl shadow-sm p-4 flex flex-col items-center">
-                <h2 className="text-lg font-semibold">Alerts</h2>
-                <p className="text-2xl font-bold text-red-600">3</p>
+                <h2 className="text-lg font-semibold">Total Crops</h2>
+                <p className="text-3xl font-bold text-blue-600 mt-2">8</p>
               </div>
             </div>
-          </div>
-
-          {/* Recent Activity */}
-          <div className="mt-8 bg-white rounded-2xl shadow-sm p-6">
-            <h2 className="text-xl font-bold mb-4">Recent Activity</h2>
-            <ul className="space-y-3 text-gray-700">
-              <li>✅ Project "Crop Monitoring AI" updated</li>
-              <li>🔔 New notification about fuel price update</li>
-              <li>📤 Image uploaded successfully</li>
-            </ul>
           </div>
         </main>
       </div>
     </div>
-  );
+  )
 }
+
+export default Dashboard;

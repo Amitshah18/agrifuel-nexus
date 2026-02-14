@@ -1,14 +1,19 @@
-import { useState } from "react";
+import { useState, FC, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Register.css";
 
-export default function Register() {
-  const navigate = useNavigate();
-  const [form, setForm] = useState({ email: "", password: "" });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+interface RegisterForm {
+  email: string;
+  password: string;
+}
 
-  const handleSubmit = async (e) => {
+const Register: FC = () => {
+  const navigate = useNavigate();
+  const [form, setForm] = useState<RegisterForm>({ email: "", password: "" });
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
     setLoading(true);
@@ -50,10 +55,10 @@ export default function Register() {
           Join <span className="font-semibold">AgriFuel Nexus</span> today!
         </p>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-gray-700 text-sm font-medium mb-1">
-              Email
+            <label className="block text-gray-700 text-sm font-medium mb-2">
+              Email Address
             </label>
             <input
               type="email"
@@ -61,12 +66,12 @@ export default function Register() {
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
               required
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:outline-none"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
             />
           </div>
 
           <div>
-            <label className="block text-gray-700 text-sm font-medium mb-1">
+            <label className="block text-gray-700 text-sm font-medium mb-2">
               Password
             </label>
             <input
@@ -75,12 +80,12 @@ export default function Register() {
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
               required
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:outline-none"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
             />
           </div>
 
           {error && (
-            <p className="text-red-600 text-sm text-center font-medium">
+            <p className="text-red-600 text-sm font-medium bg-red-50 p-3 rounded-lg">
               {error}
             </p>
           )}
@@ -88,23 +93,25 @@ export default function Register() {
           <button
             type="submit"
             disabled={loading}
-            className={`w-full py-2.5 mt-2 text-white rounded-lg font-semibold transition ${
+            className={`w-full py-2.5 rounded-lg font-semibold text-white transition ${
               loading
                 ? "bg-green-400 cursor-not-allowed"
                 : "bg-green-600 hover:bg-green-700"
             }`}
           >
-            {loading ? "Creating account..." : "Sign Up"}
+            {loading ? "Creating Account..." : "Sign Up"}
           </button>
         </form>
 
-        <p className="text-center text-gray-500 text-sm mt-6">
+        <p className="text-center text-gray-600 text-sm mt-6">
           Already have an account?{" "}
-          <a href="/login" className="text-green-600 hover:underline font-medium">
-            Log in
+          <a href="/" className="text-green-600 hover:underline font-medium">
+            Login here
           </a>
         </p>
       </div>
     </div>
   );
-}
+};
+
+export default Register;
