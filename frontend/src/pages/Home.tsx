@@ -5,7 +5,7 @@ import {
   CardHeader,
   CardTitle,
   CardContent,
-} from '../components/Card';
+} from '@/components/Card';
 import { ArrowRight, Leaf, Brain, TrendingUp } from "lucide-react";
 
 export default function Home() {
