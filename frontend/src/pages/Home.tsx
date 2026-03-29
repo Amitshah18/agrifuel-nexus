@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'; 
-import farmImg from '../assets/homePic.png';
+import farmImg from '@/assets/homePic.png';
 import {
   Card,
   CardHeader,

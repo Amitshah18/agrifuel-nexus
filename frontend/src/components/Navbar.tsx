@@ -1,7 +1,13 @@
 import React, { useState } from "react";
 import { Search, Bell, Settings, User } from "lucide-react";
 
-export default function Navbar() {
+// Define the expected props. The '?' makes it optional.
+interface NavbarProps {
+  onMenuClick?: () => void;
+}
+
+export default function Navbar({ onMenuClick }: NavbarProps) {
+  // TS infers profileOpen is a boolean
   const [profileOpen, setProfileOpen] = useState(false);
 
   return (

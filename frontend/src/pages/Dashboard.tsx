@@ -1,14 +1,19 @@
 import React, { useState } from 'react';
-import Navbar from '../components/navbar';
-import Sidebar from '../components/Sidebar';
+import Navbar from '@/components/Navbar';
+import Sidebar from '@/components/Sidebar';
 import { Upload } from 'lucide-react';
 
 export default function Dashboard() {
-  const [image, setImage] = useState(null);
+  // Explicitly typing the state as a string OR null
+  const [image, setImage] = useState<string | null>(null);
+  
+  // TypeScript automatically infers this is a boolean because of the 'false' initial value
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
+  // Typing the event object to expect an HTML input element
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // We add the '?.' (optional chaining) because e.target.files can technically be null
+    const file = e.target.files?.[0];
     if (file) {
       setImage(URL.createObjectURL(file));
     }
