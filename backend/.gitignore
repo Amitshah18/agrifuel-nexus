@@ -1,2 +1,4 @@
 # files
 db_config.py
+.vscode/*
+__pycache__/*
