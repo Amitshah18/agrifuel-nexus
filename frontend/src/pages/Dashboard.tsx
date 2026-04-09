@@ -1,82 +1,146 @@
-import React, { useState } from 'react';
-import Navbar from '@/components/Navbar';
-import Sidebar from '@/components/Sidebar';
-import { Upload } from 'lucide-react';
+import { Sun, CloudRain, Droplets, FlaskConical, Wind, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/Card';
 
 export default function Dashboard() {
-  // Explicitly typing the state as a string OR null
-  const [image, setImage] = useState<string | null>(null);
   
-  // TypeScript automatically infers this is a boolean because of the 'false' initial value
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-  // Typing the event object to expect an HTML input element
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // We add the '?.' (optional chaining) because e.target.files can technically be null
-    const file = e.target.files?.[0];
-    if (file) {
-      setImage(URL.createObjectURL(file));
-    }
-  };
+  // Mock Data for the Dashboard
+  const weather = { temp: 28, condition: "Partly Cloudy", humidity: 65, rainChance: 20 };
+  const soil = { ph: 6.2, nitrogen: "Low", moisture: 42 };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
-      <Navbar onMenuClick={() => setIsSidebarOpen(true)} />
-      <div className="flex flex-1">
-        <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-
-        <main className="flex-1 p-6 md:p-8 lg:p-10 overflow-y-auto">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">Dashboard Overview</h1>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            {/* Image Upload Section */}
-            <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-2xl p-6 bg-white shadow-sm hover:shadow-md transition col-span-1 md:col-span-2">
-              <label className="cursor-pointer flex flex-col items-center">
-                {image ? (
-                  <img
-                    src={image}
-                    alt="Uploaded"
-                    className="w-40 h-40 object-cover rounded-lg mb-3"
-                  />
-                ) : (
-                  <div className="w-40 h-40 flex items-center justify-center border rounded-lg bg-gray-100">
-                    <Upload className="w-10 h-10 text-gray-500" />
-                  </div>
-                )}
-                <span className="mt-2 text-sm font-medium text-gray-700">
-                  {image ? "Change Image" : "Upload Image"}
-                </span>
-                <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-              </label>
-            </div>
-
-            {/* Stats Section */}
-            <div className="grid grid-cols-1 gap-4">
-              <div className="bg-white rounded-2xl shadow-sm p-4 flex flex-col items-center">
-                <h2 className="text-lg font-semibold">Active Projects</h2>
-                <p className="text-2xl font-bold text-green-600">12</p>
-              </div>
-              <div className="bg-white rounded-2xl shadow-sm p-4 flex flex-col items-center">
-                <h2 className="text-lg font-semibold">Tasks</h2>
-                <p className="text-2xl font-bold text-blue-600">48</p>
-              </div>
-              <div className="bg-white rounded-2xl shadow-sm p-4 flex flex-col items-center">
-                <h2 className="text-lg font-semibold">Alerts</h2>
-                <p className="text-2xl font-bold text-red-600">3</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Recent Activity */}
-          <div className="mt-8 bg-white rounded-2xl shadow-sm p-6">
-            <h2 className="text-xl font-bold mb-4">Recent Activity</h2>
-            <ul className="space-y-3 text-gray-700">
-              <li>✅ Project "Crop Monitoring AI" updated</li>
-              <li>🔔 New notification about fuel price update</li>
-              <li>📤 Image uploaded successfully</li>
-            </ul>
-          </div>
-        </main>
+    <div className="max-w-7xl mx-auto space-y-6">
+      
+      <div className="flex justify-between items-end mb-2">
+        <div>
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Farm Overview</h1>
+          <p className="text-gray-600 mt-1">Welcome back. Here is your daily agricultural summary.</p>
+        </div>
+        <Link to="/dashboard/detection" className="hidden md:flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-lg font-semibold transition">
+          Run AI Scan <ArrowRight className="h-4 w-4" />
+        </Link>
       </div>
+
+      {/* Row 1: Environmental Intelligence */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        {/* Weather Widget */}
+        <Card className="shadow-sm border-t-4 border-t-blue-400 bg-gradient-to-br from-white to-blue-50/50">
+          <CardHeader className="pb-2 flex flex-row justify-between items-center">
+            <CardTitle className="text-lg flex items-center gap-2 text-gray-800">
+              <Sun className="h-5 w-5 text-blue-500" /> Current Climate (Pune)
+            </CardTitle>
+            <span className="text-3xl font-bold text-gray-900">{weather.temp}°C</span>
+          </CardHeader>
+          <CardContent>
+            <p className="text-blue-900 font-medium mb-4">{weather.condition}</p>
+            <div className="grid grid-cols-3 gap-4 text-sm">
+              <div className="bg-white border border-blue-100 p-3 rounded-xl flex flex-col items-center shadow-sm">
+                <Droplets className="h-5 w-5 text-blue-400 mb-1" />
+                <span className="text-gray-500 text-xs font-semibold uppercase tracking-wider">Humidity</span>
+                <span className="font-bold text-gray-900">{weather.humidity}%</span>
+              </div>
+              <div className="bg-white border border-blue-100 p-3 rounded-xl flex flex-col items-center shadow-sm">
+                <CloudRain className="h-5 w-5 text-blue-400 mb-1" />
+                <span className="text-gray-500 text-xs font-semibold uppercase tracking-wider">Rain</span>
+                <span className="font-bold text-gray-900">{weather.rainChance}%</span>
+              </div>
+              <div className="bg-white border border-blue-100 p-3 rounded-xl flex flex-col items-center shadow-sm">
+                <Wind className="h-5 w-5 text-blue-400 mb-1" />
+                <span className="text-gray-500 text-xs font-semibold uppercase tracking-wider">Wind</span>
+                <span className="font-bold text-gray-900">12 km/h</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Soil Health Widget */}
+        <Card className="shadow-sm border-t-4 border-t-amber-500 bg-gradient-to-br from-white to-amber-50/50">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg flex items-center gap-2 text-gray-800">
+              <FlaskConical className="h-5 w-5 text-amber-600" /> Soil Health Status
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-amber-900 font-medium mb-4">Loamy Soil Profile</p>
+            <div className="grid grid-cols-3 gap-4 text-sm">
+              <div className="bg-white border border-amber-100 p-3 rounded-xl flex flex-col items-center shadow-sm">
+                <span className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-1">pH Level</span>
+                <span className="font-bold text-green-600 text-xl">{soil.ph}</span>
+                <span className="text-xs text-green-700 mt-1 bg-green-100 px-2 py-0.5 rounded-full">Optimal</span>
+              </div>
+              <div className="bg-white border border-amber-100 p-3 rounded-xl flex flex-col items-center shadow-sm">
+                <span className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-1">Nitrogen</span>
+                <span className="font-bold text-red-500 text-xl">{soil.nitrogen}</span>
+                <span className="text-xs text-red-700 mt-1 bg-red-100 px-2 py-0.5 rounded-full">Warning</span>
+              </div>
+              <div className="bg-white border border-amber-100 p-3 rounded-xl flex flex-col items-center shadow-sm">
+                <span className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-1">Moisture</span>
+                <span className="font-bold text-blue-600 text-xl">{soil.moisture}%</span>
+                <span className="text-xs text-blue-700 mt-1 bg-blue-100 px-2 py-0.5 rounded-full">Good</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Row 2: Quick Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider">Active Crops</h2>
+            <p className="text-2xl font-bold text-gray-900 mt-1">Wheat, Corn</p>
+          </div>
+          <div className="h-12 w-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-xl">🌱</div>
+        </div>
+        
+        <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider">Pending Alerts</h2>
+            <p className="text-2xl font-bold text-gray-900 mt-1">2 Action Required</p>
+          </div>
+          <div className="h-12 w-12 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center text-xl">⚠️</div>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider">Biofuel Listed</h2>
+            <p className="text-2xl font-bold text-gray-900 mt-1">1.5 Tons</p>
+          </div>
+          <div className="h-12 w-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xl">♻️</div>
+        </div>
+      </div>
+
+      {/* Row 3: Activity Log */}
+      <Card className="shadow-sm border border-gray-100">
+        <CardHeader>
+          <CardTitle className="text-lg">Recent Activity</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ul className="space-y-4">
+            <li className="flex items-start gap-4 p-3 hover:bg-gray-50 rounded-lg transition">
+              <span className="bg-green-100 text-green-700 p-2.5 rounded-lg text-lg">✅</span>
+              <div>
+                <p className="font-semibold text-gray-900">Marketplace Match Found</p>
+                <p className="text-sm text-gray-600">The system matched your 1.5 Tons of Rice Husk with EcoFuel Corp. Awaiting your approval.</p>
+              </div>
+            </li>
+            <li className="flex items-start gap-4 p-3 hover:bg-gray-50 rounded-lg transition">
+              <span className="bg-amber-100 text-amber-700 p-2.5 rounded-lg text-lg">🔔</span>
+              <div>
+                <p className="font-semibold text-gray-900">New AI Advisory Generated</p>
+                <p className="text-sm text-gray-600">Low nitrogen detected in soil analysis. Recommend applying urea-based fertilizer within 48 hours.</p>
+              </div>
+            </li>
+          </ul>
+        </CardContent>
+      </Card>
+
+      {/* Mobile-only scan button */}
+      <Link to="/dashboard/detection" className="md:hidden flex items-center justify-center gap-2 bg-green-600 text-white w-full py-4 rounded-xl font-bold text-lg shadow-lg">
+        Run AI Scan Now <ArrowRight className="h-5 w-5" />
+      </Link>
+
     </div>
   );
 }
