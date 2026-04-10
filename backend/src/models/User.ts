@@ -8,13 +8,13 @@ const userSchema = new mongoose.Schema(
     password: { type: String, required: true },
     userType: { 
       type: String, 
-      enum: ["farmer", "buyer", "seller"], 
+      enum: ["farmer", "buyer"], 
       required: true 
     },
     
     // Core Identity
     fullName: { type: String }, // For Farmer or Contact Person
-    
+    totalEarnings: { type: Number, default: 0 },
     // Indian Context Address
     address: {
       state: { type: String },

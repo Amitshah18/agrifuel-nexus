@@ -23,7 +23,6 @@
     /* Allow JS during migration */
     "allowJs": true,
 
-    "baseUrl": ".",
     "paths": {
         "@/*": ["./src/*"]
     }

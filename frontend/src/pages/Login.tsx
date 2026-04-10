@@ -33,7 +33,7 @@ export default function Login() {
 
       localStorage.setItem("af_token", data.token);
       localStorage.setItem("af_user", JSON.stringify(data.user));
-      navigate(data.user.role === "farmer" ? "/dashboard" : "/marketplace");
+      navigate(data.user.role === "farmer" ? "/dashboard" : "/business");
     } catch (err: any) {
       setError(err.message || "Network error. Please check your connection.");
     } finally {

@@ -1,4 +1,4 @@
-import { Sun, CloudRain, Droplets, FlaskConical, Wind, ArrowRight } from 'lucide-react';
+import { Sun, CloudRain, Droplets, FlaskConical, Wind, ArrowRight, Leaf} from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/Card';
 
@@ -11,6 +11,19 @@ export default function Dashboard() {
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       
+      {/* Promotional Info Slider */}
+      <div className="bg-gradient-to-r from-green-800 to-green-600 rounded-3xl p-8 text-white shadow-lg relative overflow-hidden mb-8">
+        <div className="absolute right-0 top-0 opacity-10"><Leaf size={200} /></div>
+        <div className="relative z-10 max-w-xl">
+          <span className="bg-white/20 px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase mb-4 inline-block">Govt Initiative 2026</span>
+          <h2 className="text-2xl md:text-3xl font-black mb-2">Stop Stubble Burning. Start Earning.</h2>
+          <p className="text-green-50 font-medium leading-relaxed mb-6">
+            Subsidies are now available for farmers selling over 10 Tons of crop residue. Secure your deals through AgriFuel Nexus to automatically qualify.
+          </p>
+          <button className="bg-white text-green-800 font-bold px-6 py-2.5 rounded-xl hover:bg-gray-50 transition">Learn More</button>
+        </div>
+      </div>
+
       <div className="flex justify-between items-end mb-2">
         <div>
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Farm Overview</h1>
