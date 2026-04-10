@@ -2,6 +2,7 @@ import express, { Express, Request, Response } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import connectDB from "./config/db";
+import authRoutes from "./routes/authRoutes";
 
 // Load environment variables
 dotenv.config();
@@ -16,6 +17,8 @@ connectDB();
 // Middleware
 app.use(cors()); // Allows your React frontend to make requests
 app.use(express.json()); // Parses incoming JSON payloads
+
+app.use("/api/auth", authRoutes);
 
 // Basic Health Check Route
 app.get("/api/health", (req: Request, res: Response) => {
