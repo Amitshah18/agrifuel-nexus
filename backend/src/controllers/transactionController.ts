@@ -100,3 +100,15 @@ export const getFarmerAnalytics = async (req: AuthRequest, res: Response): Promi
     res.status(500).json({ message: "Failed to fetch analytics." });
   }
 };
+export const getFarmerOrders = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const orders = await Order.find({ farmer: req.user.id })
+      .populate("listing")
+      .populate("buyer", "companyDetails mobile email") // Get buyer details
+      .sort({ createdAt: -1 });
+    
+    res.status(200).json(orders);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch farmer orders." });
+  }
+};

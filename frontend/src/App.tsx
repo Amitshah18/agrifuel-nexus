@@ -18,6 +18,7 @@ import Marketplace from '@/pages/Marketplace';
 import BusinessLayout from '@/layouts/BusinessLayout';
 import BusinessDashboard from '@/pages/BusinessDashboard';
 import BusinessOrders from '@/pages/BusinessOrders';
+import FarmerListings from '@/pages/FarmerListings';
 function App() {
   return (
     <BrowserRouter>
@@ -35,6 +36,7 @@ function App() {
             <Route path="detection" element={<Detection />} />
             <Route path="advisory" element={<Advisory />} />
             <Route path="marketplace" element={<Marketplace />} />
+            <Route path="listings" element={<FarmerListings />} />
           </Route>
         </Route>
 
