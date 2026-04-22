@@ -12,7 +12,7 @@ plant_mapping = sorted(df['PLANT NAME'].unique())
 disease_mapping = sorted(df['PLANT DISEASE NAME'].astype(str).unique())
 
 # LOAD MODEL
-model = tf.keras.models.load_model('plant_disease_model_expert.h5')
+model = tf.keras.models.load_model('plant_disease_model.keras')
 
 def autonomous_test(img_path):
     # Prepare image
