@@ -1,5 +1,0 @@
-node_modules
-dist
-.envdb_config.py
-__pycache__
-db_config.py
