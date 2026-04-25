@@ -1,11 +1,11 @@
 import { Link } from 'react-router-dom'; 
-import farmImg from '../assets/homePic.png';
+import farmImg from '@/assets/homePic.png';
 import {
   Card,
   CardHeader,
   CardTitle,
   CardContent,
-} from '../components/Card/Card.jsx';
+} from '@/components/Card';
 import { ArrowRight, Leaf, Brain, TrendingUp } from "lucide-react";
 
 export default function Home() {
@@ -26,7 +26,7 @@ export default function Home() {
                 </div>
                 <div  className="absolute bottom-4 right-4 p-12">
                     <button className='inline-block items-center gap-2 bg-blue-600 text-white px-10 py-4 rounded-full hover:bg-green-800 transition-colors duration-200 '>
-                        <Link to="/dashboard">
+                        <Link to="/login">
                             Get Started <ArrowRight className="ml-2 h-4 w-4" />
                         </Link>
                     </button>
