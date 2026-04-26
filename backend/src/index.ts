@@ -16,10 +16,12 @@ const PORT = process.env.PORT || 5000;
 // Connect to MongoDB
 connectDB();
 
-// Middleware
-app.use(cors()); // Allows your React frontend to make requests
-app.use(express.json()); // Parses incoming JSON payloads
+// Middleware (FIXED: Only ONE json parser with 50mb limit)
+app.use(cors());
+app.use(express.json({ limit: '50mb' })); 
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
+// Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/listings", listingRoutes);
 app.use("/api/transactions", transactionRoutes);

@@ -6,6 +6,11 @@ const listingSchema = new mongoose.Schema(
     residueType: { type: String, required: true },
     quantity: { type: Number, required: true },
     pricePerTon: { type: Number, required: true },
+    description: { type: String },
+    images: { 
+      type: [String], 
+      validate: [(val: string[]) => val.length <= 2, 'Cannot exceed 2 images'] 
+    },
     location: {
       state: { type: String }, district: { type: String }, village: { type: String },
       // Store exact live coordinates
