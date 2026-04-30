@@ -3,18 +3,16 @@ import { Home, Scan, Sprout, Store, UserCircle } from 'lucide-react-native';
 import { Platform, View, ActivityIndicator } from 'react-native';
 import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTranslation } from 'react-i18next';
+import '../../src/i18n';
 
 export default function DashboardLayout() {
   const [isAuthorized, setIsAuthorized] = useState(false);
-
+  const { t } = useTranslation(); 
   useEffect(() => {
     const checkAccess = async () => {
       const userStr = await AsyncStorage.getItem('af_user');
-      
-      if (!userStr) {
-        router.replace('/login');
-        return;
-      }
+      if (!userStr) { router.replace('/login'); return; }
       
       const user = JSON.parse(userStr);
       const actualUserType = user.userType || user.role;
@@ -40,26 +38,17 @@ export default function DashboardLayout() {
         tabBarActiveTintColor: '#16a34a',
         tabBarInactiveTintColor: '#9ca3af',
         tabBarStyle: {
-          backgroundColor: '#ffffff',
-          borderTopWidth: 1,
-          borderTopColor: '#f3f4f6',
-          height: Platform.OS === 'ios' ? 85 : 65,
-          paddingBottom: Platform.OS === 'ios' ? 25 : 10,
-          paddingTop: 10,
+          backgroundColor: '#ffffff', borderTopWidth: 1, borderTopColor: '#f3f4f6',
+          height: Platform.OS === 'ios' ? 85 : 65, paddingBottom: Platform.OS === 'ios' ? 25 : 10, paddingTop: 10,
         },
         tabBarLabelStyle: { fontSize: 12, fontWeight: 'bold', marginTop: 2 },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: 'Home', tabBarIcon: ({ color }) => <Home color={color} size={24} /> }} />
-      
-      {/* CRITICAL: If these files don't exist yet, comment them out temporarily! 
-        Uncomment them ONLY after you create detection.tsx and advisory.tsx 
-      */}
-      {/* <Tabs.Screen name="detection" options={{ title: 'Scan', tabBarIcon: ({ color }) => <Scan color={color} size={24} /> }} /> */}
-      {/* <Tabs.Screen name="advisory" options={{ title: 'Advisory', tabBarIcon: ({ color }) => <Sprout color={color} size={24} /> }} /> */}
-      
-      <Tabs.Screen name="marketplace" options={{ title: 'Market', tabBarIcon: ({ color }) => <Store color={color} size={24} /> }} />
-      <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: ({ color }) => <UserCircle color={color} size={24} /> }} />
+      <Tabs.Screen name="index" options={{ title: t('tabs.home'), tabBarIcon: ({ color }) => <Home color={color} size={24} /> }} />
+      {/* <Tabs.Screen name="detection" options={{ title: t('tabs.scan'), tabBarIcon: ({ color }) => <Scan color={color} size={24} /> }} /> */}
+      {/* <Tabs.Screen name="advisory" options={{ title: t('tabs.advisory'), tabBarIcon: ({ color }) => <Sprout color={color} size={24} /> }} /> */}
+      <Tabs.Screen name="marketplace" options={{ title: t('tabs.market'), tabBarIcon: ({ color }) => <Store color={color} size={24} /> }} />
+      <Tabs.Screen name="profile" options={{ title: t('tabs.profile'), tabBarIcon: ({ color }) => <UserCircle color={color} size={24} /> }} />
     </Tabs>
   );
 }

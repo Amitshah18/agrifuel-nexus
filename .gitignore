@@ -1,0 +1,16 @@
+# Python Virtual Environments
+AI-Services/venv/
+venv/
+env/
+__pycache__/
+
+# Node.js
+mobile-app/node_modules/
+node_modules/
+
+# Environment Variables
+.env
+
+# OS generated files
+.DS_Store
+Thumbs.db

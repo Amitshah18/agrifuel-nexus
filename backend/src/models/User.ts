@@ -23,6 +23,11 @@ const userSchema = new mongoose.Schema(
       village: { type: String },
       pincode: { type: String },
     },
+    preferredLanguage: { 
+      type: String, 
+      enum: ['English', 'Hindi', 'Bengali', 'Marathi', 'Punjabi', 'Haryanvi'],
+      default: 'Hindi' 
+    },
 
     // B2B Company Specific (Buyers/Sellers)
     companyDetails: {

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './App.css';
 
+import { LanguageProvider } from './context/LanguageContext';
 // Pages
 import Home from '@/pages/Home';
 import Login from '@/pages/Login';
@@ -21,37 +22,39 @@ import BusinessOrders from '@/pages/BusinessOrders';
 import FarmerListings from '@/pages/FarmerListings';
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        
-        {/* ==========================================
-            ZONE 1: FARMER / SELLER ROUTES
-            ========================================== */}
-        <Route element={<ProtectedRoute allowedRole="farmer" />}>
-          <Route path="/dashboard" element={<DashboardLayout />}>
-            <Route index element={<Dashboard />} />
-            <Route path="detection" element={<Detection />} />
-            <Route path="advisory" element={<Advisory />} />
-            <Route path="marketplace" element={<Marketplace />} />
-            <Route path="listings" element={<FarmerListings />} />
+    <LanguageProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          
+          {/* ==========================================
+              ZONE 1: FARMER / SELLER ROUTES
+              ========================================== */}
+          <Route element={<ProtectedRoute allowedRole="farmer" />}>
+            <Route path="/dashboard" element={<DashboardLayout />}>
+              <Route index element={<Dashboard />} />
+              <Route path="detection" element={<Detection />} />
+              <Route path="advisory" element={<Advisory />} />
+              <Route path="marketplace" element={<Marketplace />} />
+              <Route path="listings" element={<FarmerListings />} />
+            </Route>
           </Route>
-        </Route>
 
-        {/* ==========================================
-            ZONE 2: BUSINESS / BUYER ROUTES
-            ========================================== */}
-        <Route element={<ProtectedRoute allowedRole="buyer" />}>
-          <Route path="/business" element={<BusinessLayout />}>
-            <Route index element={<BusinessDashboard />} />
-            <Route path="orders" element={<BusinessOrders />} />
+          {/* ==========================================
+              ZONE 2: BUSINESS / BUYER ROUTES
+              ========================================== */}
+          <Route element={<ProtectedRoute allowedRole="buyer" />}>
+            <Route path="/business" element={<BusinessLayout />}>
+              <Route index element={<BusinessDashboard />} />
+              <Route path="orders" element={<BusinessOrders />} />
+            </Route>
           </Route>
-        </Route>
 
-      </Routes>
-    </BrowserRouter>
+        </Routes>
+      </BrowserRouter>
+    </LanguageProvider>
   );
 }
 

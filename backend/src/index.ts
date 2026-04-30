@@ -5,14 +5,14 @@ import connectDB from "./config/db";
 import authRoutes from "./routes/authRoutes";
 import listingRoutes from "./routes/listingRoutes";
 import transactionRoutes from "./routes/transactionRoutes";
+import advisoryRoutes from './routes/advisoryRoutes';
 
 // Load environment variables
 dotenv.config();
 
 // Initialize Express app
 const app: Express = express();
-const PORT = process.env.PORT || 5000;
-
+const PORT: number = process.env.PORT ? parseInt(process.env.PORT, 10) : 5000;
 // Connect to MongoDB
 connectDB();
 
@@ -25,6 +25,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use("/api/auth", authRoutes);
 app.use("/api/listings", listingRoutes);
 app.use("/api/transactions", transactionRoutes);
+app.use('/api/advisory', advisoryRoutes);
 
 // Basic Health Check Route
 app.get("/api/health", (req: Request, res: Response) => {
@@ -32,6 +33,6 @@ app.get("/api/health", (req: Request, res: Response) => {
 });
 
 // Start Server
-app.listen(PORT, () => {
+app.listen(PORT,'0.0.0.0', () => {
   console.log(`Server is running in development mode on port ${PORT}`);
 });

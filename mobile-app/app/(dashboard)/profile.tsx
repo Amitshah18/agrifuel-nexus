@@ -1,113 +1,104 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { UserCircle, Mail, ShieldCheck, Leaf, Building2, LogOut, ChevronRight } from 'lucide-react-native';
+import { UserCircle, LogOut, ChevronRight, Globe, Check } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
+
+const SUPPORTED_LANGUAGES = ['English', 'Hindi', 'Bengali', 'Marathi', 'Punjabi', 'Haryanvi'];
 
 export default function ProfileScreen() {
   const [user, setUser] = useState<any>(null);
+  const [showLangModal, setShowLangModal] = useState(false);
+  
+  const { t, i18n } = useTranslation(); // 👈 USE TRANSLATION HOOK
 
   useEffect(() => {
     const loadUser = async () => {
       const userData = await AsyncStorage.getItem('af_user');
-      if (userData) {
-        setUser(JSON.parse(userData));
-      }
+      if (userData) setUser(JSON.parse(userData));
     };
     loadUser();
   }, []);
 
-  const handleLogout = () => {
-    Alert.alert(
-      "Secure Logout",
-      "Are you sure you want to log out of AgriFuel Nexus?",
-      [
-        { text: "Cancel", style: "cancel" },
-        { 
-          text: "Log Out", 
-          style: "destructive",
-          onPress: async () => {
-            await AsyncStorage.removeItem('af_token');
-            await AsyncStorage.removeItem('af_user');
-            router.replace('/login');
-          }
-        }
-      ]
-    );
+  const changeLanguage = async (lang: string) => {
+    i18n.changeLanguage(lang);
+    await AsyncStorage.setItem('preferredLanguage', lang);
+    setShowLangModal(false);
   };
 
-  if (!user) return <View className="flex-1 bg-gray-50" />;
+  const handleLogout = () => {
+    Alert.alert(t('profile.secure_logout'), t('profile.logout_confirm'), [
+      { text: t('common.cancel'), style: "cancel" },
+      { 
+        text: t('profile.log_out'), style: "destructive",
+        onPress: async () => {
+          await AsyncStorage.removeItem('af_token');
+          await AsyncStorage.removeItem('af_user');
+          router.replace('/login');
+        }
+      }
+    ]);
+  };
 
-  const isFarmer = (user.userType || user.role) === 'farmer';
+  if (!user) return <View style={{ flex: 1, backgroundColor: '#f9fafb' }} />;
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
-        
-        <View className="items-center pt-8 pb-6 px-6">
-          <View className={`h-24 w-24 rounded-full items-center justify-center mb-4 shadow-sm border-4 border-white ${isFarmer ? 'bg-green-100' : 'bg-blue-100'}`}>
-            {isFarmer ? <Leaf color="#16a34a" size={40} /> : <Building2 color="#2563eb" size={40} />}
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#f9fafb' }} edges={['top']}>
+      <ScrollView contentContainerStyle={{ padding: 24 }}>
+        <View style={{ alignItems: 'center', marginBottom: 32 }}>
+          <View style={{ width: 96, height: 96, backgroundColor: '#dcfce7', borderRadius: 48, alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+            <UserCircle color="#16a34a" size={48} />
           </View>
-          
-          <Text className="text-2xl font-extrabold text-gray-900 tracking-tight text-center">
-            {user.name || "Farmer"}
-          </Text>
-          
-          <View className={`mt-2 px-3 py-1 rounded-full ${isFarmer ? 'bg-green-100' : 'bg-blue-100'}`}>
-            <Text className={`text-xs font-bold uppercase tracking-wider ${isFarmer ? 'text-green-800' : 'text-blue-800'}`}>
-              {isFarmer ? 'Verified Farmer' : 'Corporate Buyer'}
-            </Text>
-          </View>
+          <Text style={{ fontSize: 24, fontWeight: '900', color: '#111827' }}>{user.fullName || user.businessName}</Text>
+          <Text style={{ fontSize: 16, color: '#6b7280', fontWeight: '500' }}>{user.email || user.mobile}</Text>
         </View>
 
-        <View className="px-6 space-y-6 mt-4">
-          <View className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-            <View className="p-4 border-b border-gray-50 flex-row items-center">
-              <Mail color="#9ca3af" size={20} />
-              <View className="ml-4">
-                <Text className="text-xs font-bold text-gray-400 uppercase tracking-wider">Email Address</Text>
-                <Text className="text-base font-medium text-gray-900">{user.email}</Text>
-              </View>
+        <View style={{ backgroundColor: 'white', borderRadius: 24, borderWidth: 1, borderColor: '#f3f4f6', overflow: 'hidden' }}>
+          <TouchableOpacity onPress={() => setShowLangModal(true)} style={{ padding: 20, borderBottomWidth: 1, borderBottomColor: '#f9fafb', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Globe color="#6b7280" size={20} />
+              <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827', marginLeft: 16 }}>{t('profile.app_language')}</Text>
             </View>
-            
-            <View className="p-4 border-b border-gray-50 flex-row items-center">
-              <UserCircle color="#9ca3af" size={20} />
-              <View className="ml-4">
-                <Text className="text-xs font-bold text-gray-400 uppercase tracking-wider">Account ID</Text>
-                <Text className="text-base font-medium text-gray-900">{user._id?.substring(0, 10)}...</Text>
-              </View>
-            </View>
-
-            <View className="p-4 flex-row items-center">
-              <ShieldCheck color="#16a34a" size={20} />
-              <View className="ml-4">
-                <Text className="text-xs font-bold text-gray-400 uppercase tracking-wider">Security</Text>
-                <Text className="text-base font-medium text-gray-900">Password Protected</Text>
-              </View>
-            </View>
-          </View>
-
-          <View className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden mt-4">
-            <TouchableOpacity className="p-5 border-b border-gray-50 flex-row items-center justify-between bg-white active:bg-gray-50">
-              <Text className="text-base font-bold text-gray-900">Edit Profile</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={{ fontSize: 14, fontWeight: '700', color: '#16a34a', marginRight: 8 }}>{i18n.language}</Text>
               <ChevronRight color="#9ca3af" size={20} />
-            </TouchableOpacity>
-            <TouchableOpacity className="p-5 flex-row items-center justify-between bg-white active:bg-gray-50">
-              <Text className="text-base font-bold text-gray-900">Support & Help</Text>
-              <ChevronRight color="#9ca3af" size={20} />
-            </TouchableOpacity>
-          </View>
+            </View>
+          </TouchableOpacity>
 
-          <TouchableOpacity 
-            onPress={handleLogout}
-            className="mt-6 bg-red-50 border border-red-100 p-5 rounded-2xl flex-row items-center justify-center active:bg-red-100 transition-colors"
-          >
-            <LogOut color="#dc2626" size={20} />
-            <Text className="text-red-600 font-extrabold text-base ml-2">Secure Logout</Text>
+          <TouchableOpacity style={{ padding: 20, borderBottomWidth: 1, borderBottomColor: '#f9fafb', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827', marginLeft: 36 }}>{t('profile.edit_profile')}</Text>
+            <ChevronRight color="#9ca3af" size={20} />
           </TouchableOpacity>
         </View>
+
+        <TouchableOpacity onPress={handleLogout} style={{ marginTop: 32, backgroundColor: '#fef2f2', borderColor: '#fee2e2', borderWidth: 1, padding: 20, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+          <LogOut color="#dc2626" size={20} style={{ marginRight: 8 }} />
+          <Text style={{ color: '#b91c1c', fontWeight: '900', fontSize: 16 }}>{t('profile.secure_logout')}</Text>
+        </TouchableOpacity>
       </ScrollView>
+
+      {/* LANGUAGE MODAL */}
+      <Modal visible={showLangModal} animationType="slide" transparent={true}>
+        <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <View style={{ backgroundColor: 'white', borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: 24, paddingBottom: 48 }}>
+            <Text style={{ fontSize: 20, fontWeight: '900', marginBottom: 16 }}>{t('profile.select_language')}</Text>
+            {SUPPORTED_LANGUAGES.map((lang) => (
+              <TouchableOpacity 
+                key={lang} onPress={() => changeLanguage(lang)}
+                style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' }}
+              >
+                <Text style={{ fontSize: 18, fontWeight: i18n.language === lang ? '800' : '500', color: i18n.language === lang ? '#16a34a' : '#111827' }}>{lang}</Text>
+                {i18n.language === lang && <Check color="#16a34a" size={20} />}
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity onPress={() => setShowLangModal(false)} style={{ marginTop: 24, alignItems: 'center' }}>
+              <Text style={{ fontSize: 16, fontWeight: '700', color: '#6b7280' }}>{t('common.cancel')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }

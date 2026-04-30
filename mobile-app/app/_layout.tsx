@@ -1,10 +1,10 @@
 import { Stack } from 'expo-router';
+import { LanguageProvider } from '../src/context/LanguageContext';
 
 export default function RootLayout() {
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      {/* This tells Expo Router to load index.tsx first, 
-          and hides the default mobile headers globally */}
-    </Stack>
+    <LanguageProvider>
+      <Stack screenOptions={{ headerShown: false }} />
+    </LanguageProvider>
   );
 }
