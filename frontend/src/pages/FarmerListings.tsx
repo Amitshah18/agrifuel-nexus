@@ -1,151 +1,66 @@
-import React, { useState, useEffect, FormEvent } from 'react';
-import { Package, IndianRupee, KeyRound, CheckCircle2, Truck, AlertTriangle, Navigation, Leaf, History, PlusCircle, TrendingUp, MessageSquare, Image as ImageIcon, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Package, CheckCircle2, Truck, AlertTriangle, Leaf, History, MessageSquare } from 'lucide-react';
+import { api } from '../lib/api';
 
 export default function FarmerListings() {
   const [orders, setOrders] = useState<any[]>([]);
   const [unbookedListings, setUnbookedListings] = useState<any[]>([]);
   const [offers, setOffers] = useState<any[]>([]);
-  const [benchmark, setBenchmark] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [isLocating, setIsLocating] = useState(false);
   const [otpInput, setOtpInput] = useState<{ [key: string]: string }>({});
-
-  // Form State
-  const [residueType, setResidueType] = useState('');
-  const [customResidue, setCustomResidue] = useState('');
-  const [quantity, setQuantity] = useState('');
-  const [pricePerTon, setPricePerTon] = useState('');
-  const [description, setDescription] = useState('');
-  const [images, setImages] = useState<string[]>([]); 
 
   useEffect(() => {
     fetchData();
   }, []);
 
-  useEffect(() => {
-    const fetchBenchmark = async () => {
-      const typeToCheck = residueType === 'Other' ? customResidue : residueType;
-      if (typeToCheck && residueType !== 'Other') {
-        const state = JSON.parse(localStorage.getItem('af_user') || '{}').address?.state || "Maharashtra";
-        try {
-          const res = await fetch(`/api/listings/benchmark?residueType=${typeToCheck}&state=${state}`);
-          const data = await res.json();
-          if (data.avgPrice > 0) setBenchmark(data);
-          else setBenchmark(null);
-        } catch (e) { setBenchmark(null); }
-      } else { setBenchmark(null); }
-    };
-    fetchBenchmark();
-  }, [residueType, customResidue]);
-
   const fetchData = async () => {
     try {
-      const token = localStorage.getItem('af_token');
-      
-      const ordersRes = await fetch('/api/transactions/farmer/orders', { headers: { Authorization: `Bearer ${token}` } });
-      setOrders(await ordersRes.json());
+      // Clean, simple API calls without manual token extraction
+      const ordersData = await api.get('/api/transactions/farmer/orders');
+      setOrders(ordersData);
 
       try {
-        const offersRes = await fetch('/api/transactions/offers/received', { headers: { Authorization: `Bearer ${token}` } });
-        setOffers(await offersRes.json());
-      } catch (e) {}
+        const offersData = await api.get('/api/transactions/offers/received');
+        setOffers(offersData);
+      } catch (e) {
+        // Silently ignore if offers fail (e.g. no active offers)
+      }
 
-      const listingsRes = await fetch('/api/listings', { headers: { Authorization: `Bearer ${token}` } });
-      const listingsData = await listingsRes.json();
+      const listingsData = await api.get('/api/listings');
       const myId = JSON.parse(localStorage.getItem('af_user') || '{}').id;
       
       const available = listingsData.filter((l: any) => l.farmer?._id === myId && l.status === 'available');
       setUnbookedListings(available);
       
-    } catch (error) { console.error(error); } finally { setLoading(false); }
-  };
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-    if (images.length + files.length > 2) return alert("Maximum 2 images allowed.");
-
-    Array.from(files).forEach(file => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImages(prev => [...prev, reader.result as string]);
-      };
-      reader.readAsDataURL(file);
-    });
-  };
-
-  const removeImage = (indexToRemove: number) => {
-    setImages(images.filter((_, index) => index !== indexToRemove));
-  };
-
-  const handleCreateListing = async (e: FormEvent) => {
-    e.preventDefault();
-    const finalResidueType = residueType === 'Other' ? customResidue : residueType;
-    if (!finalResidueType) return alert("Please specify the residue type.");
-
-    setIsLocating(true);
-    
-    if (!navigator.geolocation) {
-      alert("Geolocation is not supported by your browser.");
-      setIsLocating(false);
-      return;
+    } catch (error) { 
+      console.error(error); 
+    } finally { 
+      setLoading(false); 
     }
-
-    navigator.geolocation.getCurrentPosition(async (position) => {
-      try {
-        const token = localStorage.getItem('af_token');
-        const res = await fetch('/api/listings', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ 
-            residueType: finalResidueType, 
-            quantity: Number(quantity), 
-            pricePerTon: Number(pricePerTon),
-            description,
-            images,
-            coordinates: { lat: position.coords.latitude, lng: position.coords.longitude } 
-          })
-        });
-        
-        if (res.ok) {
-          setResidueType(''); setCustomResidue(''); setQuantity(''); setPricePerTon(''); setDescription(''); setImages([]);
-          alert("Listing Published Successfully!");
-          fetchData();
-        } else alert("Failed to create listing.");
-      } catch (error) { console.error(error); } finally { setIsLocating(false); }
-    }, () => { alert("Location access required."); setIsLocating(false); });
   };
 
   const handleOfferAction = async (offerId: string, action: 'accept' | 'reject') => {
     try {
-      const token = localStorage.getItem('af_token');
-      const res = await fetch(`/api/transactions/offers/${offerId}/${action}`, {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.ok) {
-        alert(`Offer ${action}ed successfully!`);
-        fetchData(); 
-      }
-    } catch (error) { alert("Failed to process offer."); }
+      await api.put(`/api/transactions/offers/${offerId}/${action}`);
+      alert(`Offer ${action}ed successfully!`);
+      fetchData(); 
+    } catch (error) { 
+      alert("Failed to process offer."); 
+    }
   };
 
   const handleVerifyOTP = async (orderId: string) => {
     const submittedOtp = otpInput[orderId];
     if (!submittedOtp || submittedOtp.length !== 6) return alert("Enter a valid 6-digit OTP");
+    
     try {
-      const token = localStorage.getItem('af_token');
-      const res = await fetch('/api/transactions/verify-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ orderId, submittedOtp })
-      });
-      if (res.ok) {
-        alert("🎉 Success! Funds have been released to your account.");
-        setOtpInput({...otpInput, [orderId]: ''});
-        fetchData();
-      } else alert((await res.json()).message);
-    } catch (error) { alert("Verification failed."); }
+      await api.post('/api/transactions/verify-otp', { orderId, submittedOtp });
+      alert("🎉 Success! Funds have been released to your account.");
+      setOtpInput({...otpInput, [orderId]: ''});
+      fetchData();
+    } catch (error: any) { 
+      alert(error.message || "Verification failed."); 
+    }
   };
 
   const pendingOrders = orders.filter(o => o.status === 'funds_in_escrow');
@@ -196,7 +111,7 @@ export default function FarmerListings() {
         </div>
       )}
 
-      {/* PICKUPS ARRIVING (OTP) - UI FIXED TO NEVER CUT OFF */}
+      {/* PICKUPS ARRIVING (OTP) */}
       {pendingOrders.length > 0 && (
         <div className="bg-orange-50/50 border border-orange-100 rounded-3xl p-6 shadow-sm">
           <h2 className="text-lg font-bold text-orange-800 mb-5 flex items-center gap-2">
@@ -226,7 +141,6 @@ export default function FarmerListings() {
                     </div>
                   </div>
 
-                  {/* THE FIX: Compact, horizontal flex row that will never overflow */}
                   <div className="mt-auto pt-4 border-t border-gray-100">
                     <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">Enter Driver's OTP</label>
                     <div className="flex flex-row items-center gap-3">
@@ -248,80 +162,6 @@ export default function FarmerListings() {
           </div>
         </div>
       )}
-
-      {/* CREATE LISTING */}
-      <div className="bg-white border border-gray-200 rounded-3xl p-6 md:p-8 shadow-sm">
-        <div className="flex items-center gap-2 mb-6">
-          <PlusCircle className="text-green-600" size={20} />
-          <h2 className="text-lg font-bold text-gray-900">Create New Listing</h2>
-        </div>
-        
-        <form onSubmit={handleCreateListing} className="space-y-5">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wider">Residue Type *</label>
-              <select required value={residueType} onChange={(e) => {setResidueType(e.target.value); setCustomResidue('');}} className="w-full border border-gray-200 rounded-lg px-4 py-2.5 font-medium text-gray-800 bg-gray-50 focus:bg-white outline-none focus:ring-1 focus:ring-green-500 transition-all text-sm mb-2">
-                <option value="" disabled>Select Crop Waste</option>
-                <option value="Rice Husk">Rice Husk</option>
-                <option value="Wheat Straw">Wheat Straw</option>
-                <option value="Sugarcane Bagasse">Sugarcane Bagasse</option>
-                <option value="Corn Stover">Corn Stover</option>
-                <option value="Other">Other (Specify)</option>
-              </select>
-              {residueType === 'Other' && (
-                <input required type="text" value={customResidue} onChange={(e) => setCustomResidue(e.target.value)} placeholder="Type residue name..." className="w-full border border-green-300 rounded-lg px-4 py-2.5 font-semibold text-gray-900 bg-green-50/30 outline-none focus:ring-1 focus:ring-green-500 transition-all text-sm"/>
-              )}
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wider">Quantity (Tons) *</label>
-              <input required type="number" step="0.1" min="0.1" value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="e.g. 5.5" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 font-medium text-gray-800 bg-gray-50 focus:bg-white outline-none focus:ring-1 focus:ring-green-500 text-sm"/>
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wider">Price (₹/Ton) *</label>
-              <input required type="number" min="1" value={pricePerTon} onChange={(e) => setPricePerTon(e.target.value)} placeholder="0.00" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 font-medium text-gray-800 bg-gray-50 focus:bg-white outline-none focus:ring-1 focus:ring-green-500 text-sm"/>
-              
-              {benchmark && residueType !== 'Other' && (
-                <div className="mt-2 bg-green-50 border border-green-100 rounded px-3 py-1.5 flex items-center gap-2">
-                  <TrendingUp className="text-green-600" size={14} />
-                  <p className="text-[10px] font-bold text-green-800">State Avg: ₹{benchmark.avgPrice.toFixed(0)}/t</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-3 border-t border-gray-100">
-            <div>
-              <div className="flex justify-between items-center mb-1.5">
-                <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider">Add Photos (Max 2)</label>
-                <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded">{images.length}/2</span>
-              </div>
-              <div className="flex gap-3 items-start">
-                {images.length < 2 && (
-                  <label className="border-2 border-dashed border-gray-300 rounded-lg h-20 w-20 bg-gray-50 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-gray-100 transition-colors">
-                    <ImageIcon className="text-gray-400 mb-1" size={16} />
-                    <span className="text-[10px] font-bold text-gray-500">Upload</span>
-                    <input type="file" multiple accept="image/*" onChange={handleImageUpload} className="hidden" />
-                  </label>
-                )}
-                {images.map((imgSrc, index) => (
-                  <div key={index} className="relative h-20 w-20 rounded-lg border border-gray-200 shadow-sm overflow-hidden group">
-                    <img src={imgSrc} alt="Preview" className="w-full h-full object-cover" />
-                    <button type="button" onClick={() => removeImage(index)} className="absolute top-1 right-1 bg-red-500/80 hover:bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"><X size={12} /></button>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wider">Description (Optional)</label>
-              <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Condition, access..." className="w-full border border-gray-200 rounded-lg px-4 py-2.5 font-medium text-gray-800 bg-gray-50 focus:bg-white outline-none focus:ring-1 focus:ring-green-500 text-sm h-20 resize-none"></textarea>
-            </div>
-          </div>
-
-          <button type="submit" disabled={isLocating} className="w-full bg-gray-900 hover:bg-gray-800 text-white font-bold py-3.5 rounded-lg flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.99] disabled:opacity-70 mt-2 text-sm">
-            {isLocating ? "Processing..." : "Post Listing"}
-          </button>
-        </form>
-      </div>
 
       {/* ACTIVE INVENTORY & HISTORY */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

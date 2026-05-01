@@ -1,17 +1,16 @@
 import { useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   Home,
-  Microscope,
   Lightbulb,
-  Leaf,
   ShoppingCart,
   TrendingUp,
   BarChart3,
-  Upload,
   Settings,
-  PanelLeft,
-  LucideIcon // Keep this import for our TS interface
+  LogOut,
+  PanelLeftClose,
+  PanelLeftOpen,
+  LucideIcon
 } from "lucide-react";
 
 interface NavItem {
@@ -20,84 +19,80 @@ interface NavItem {
   icon: LucideIcon;
 }
 
-const mainItems: NavItem[] = [
-  { title: "Dashboard", url: "/dashboard", icon: Home },
-  { title: "AI Disease Detection", url: "/dashboard/detection", icon: Microscope },
-  { title: "Farming Advisory", url: "/dashboard/advisory", icon: Lightbulb },
-  { title: "Crop Health", url: "/dashboard/health", icon: Leaf },
-];
-
-const marketplaceItems: NavItem[] = [
-  { title: "My Listings", url: "/dashboard/listings", icon: ShoppingCart },
-  { title: "Marketplace", url: "/dashboard/marketplace", icon: TrendingUp },
-  { title: "Analytics", url: "/dashboard/analytics", icon: BarChart3 },
-];
-
-const systemItems: NavItem[] = [
-  { title: "Upload Data", url: "/dashboard/upload", icon: Upload },
-  { title: "Settings", url: "/dashboard/settings", icon: Settings },
-];
-
 interface SidebarProps {
   isOpen?: boolean;
   onClose?: () => void;
 }
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem("af_token");
+    localStorage.removeItem("af_user");
+    navigate("/login");
+  };
 
   const navItems = [
-    { label: "AI Farming", items: mainItems },
-    { label: "Marketplace", items: marketplaceItems },
-    { label: "System", items: systemItems },
+    {
+      label: "Farming",
+      items: [
+        { title: "Dashboard", url: "/dashboard", icon: Home },
+        { title: "Advisory", url: "/dashboard/advisory", icon: Lightbulb },
+      ]
+    },
+    {
+      label: "Marketplace",
+      items: [
+        { title: "Marketplace", url: "/dashboard/marketplace", icon: TrendingUp },
+        { title: "My Listings", url: "/dashboard/listings", icon: ShoppingCart },
+        { title: "Analytics", url: "/dashboard/analytics", icon: BarChart3 },
+      ]
+    }
   ];
 
   return (
     <>
-      {/* 1. Mobile Backdrop: Shows only when sidebar is open on small screens */}
+      {/* 1. Mobile Backdrop */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden transition-opacity duration-10"
           onClick={onClose}
         />
       )}
 
-      {/* 2. Aside Element: Now utilizes isOpen for mobile sliding logic */}
+      {/* 2. Aside Element: Lightning fast transition */}
       <aside
-        className={`h-screen bg-white text-black transition-transform duration-300 ease-in-out flex flex-col
-          fixed md:relative z-50 md:z-auto
-          ${collapsed ? "w-16" : "w-64"}
+        className={`bg-white border-r border-[#E5E9DF] text-[#1A2E19] transition-all duration-150 ease-out flex flex-col shrink-0
+          fixed md:relative z-50 md:z-auto h-full
+          ${collapsed ? "w-[72px]" : "w-50"}
           ${isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
         `}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-700">
+        {/* Toggle Button Area with Text */}
+        <div className={`flex items-center h-14 border-b border-[#F4F7F4] overflow-hidden whitespace-nowrap ${collapsed ? 'justify-center' : 'justify-between px-5'}`}>
           {!collapsed && (
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-green-400 to-blue-500 flex items-center justify-center font-bold">
-                A
-              </div>
-              <div>
-                <h2 className="text-lg font-bold">AgriFuel</h2>
-                <p className="text-xs text-black">Nexus</p>
-              </div>
-            </div>
+            <span className="text-[10px] font-black text-[#8A9A86] uppercase tracking-widest">
+              Navigation
+            </span>
           )}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="p-1 rounded hover:bg-gray-700"
+            className="p-2 rounded-xl text-[#8A9A86] hover:text-[#16a34a] hover:bg-[#F0FDF4] transition-colors"
+            title={collapsed ? "Expand Menu" : "Collapse Menu"}
           >
-            <PanelLeft size={20} />
+            {collapsed ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
           </button>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto">
+        {/* Navigation Links */}
+        <nav className="flex-1 overflow-y-auto py-4 hide-scrollbar">
           {navItems.map((section) => (
-            <div key={section.label} className="mt-4">
+            <div key={section.label} className="mb-6 px-3">
               {!collapsed && (
-                <p className="px-4 text-xs font-semibold text-black mb-2">
+                <p className="px-3 text-[10px] font-black text-[#8A9A86] uppercase tracking-widest mb-2">
                   {section.label}
                 </p>
               )}
@@ -108,13 +103,17 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                     <li key={item.title}>
                       <NavLink
                         to={item.url}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
+                        onClick={() => onClose && onClose()} 
+                        className={`flex items-center gap-3 py-2.5 rounded-xl transition-colors ${
+                          collapsed ? 'justify-center px-0' : 'px-3'
+                        } ${
                           active
-                            ? "bg-green-600 text-white"
-                            : "hover:bg-gray-700 text-black"
+                            ? "bg-[#F0FDF4] text-[#16a34a] font-bold border border-[#DCFCE7]"
+                            : "text-[#5C715A] hover:bg-[#F8FAF8] hover:text-[#1A2E19] font-medium border border-transparent"
                         }`}
+                        title={collapsed ? item.title : ""}
                       >
-                        <item.icon size={18} />
+                        <item.icon size={18} className={active ? "text-[#16a34a]" : "text-[#8A9A86]"} />
                         {!collapsed && <span>{item.title}</span>}
                       </NavLink>
                     </li>
@@ -124,6 +123,32 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             </div>
           ))}
         </nav>
+
+        {/* Bottom Actions */}
+        <div className="p-3 border-t border-[#F4F7F4] space-y-1">
+          <NavLink
+            to="/dashboard/settings"
+            onClick={() => onClose && onClose()}
+            className={({ isActive }) => `flex items-center gap-3 py-2.5 rounded-xl transition-colors ${
+              collapsed ? 'justify-center px-0' : 'px-3'
+            } ${isActive ? "bg-[#F0FDF4] text-[#16a34a] font-bold border border-[#DCFCE7]" : "text-[#5C715A] hover:bg-[#F8FAF8] hover:text-[#1A2E19] font-medium border border-transparent"}`}
+            title={collapsed ? "Settings" : ""}
+          >
+            <Settings size={18} className="text-[#8A9A86]" />
+            {!collapsed && <span>Settings</span>}
+          </NavLink>
+
+          <button
+            onClick={handleLogout}
+            className={`w-full flex items-center gap-3 py-2.5 rounded-xl transition-colors text-red-600 hover:bg-[#FEF2F2] hover:text-red-700 font-medium ${
+              collapsed ? 'justify-center px-0' : 'px-3'
+            }`}
+            title={collapsed ? "Log Out" : ""}
+          >
+            <LogOut size={18} className="text-red-400" />
+            {!collapsed && <span>Log Out</span>}
+          </button>
+        </div>
       </aside>
     </>
   );

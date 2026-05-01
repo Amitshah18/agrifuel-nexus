@@ -6,7 +6,8 @@ import { LanguageProvider } from './context/LanguageContext';
 import Home from '@/pages/Home';
 import Login from '@/pages/Login';
 import Signup from '@/pages/Signup';
-import ProtectedRoute from '@/components/ProtectedRoute'; // <-- Import the Gatekeeper
+import ProtectedRoute from '@/components/ProtectedRoute';
+import Settings from './pages/Settings'; // <-- Import the Gatekeeper
 
 // Farmer Imports
 import DashboardLayout from '@/layouts/DashboardLayout';
@@ -20,6 +21,8 @@ import BusinessLayout from '@/layouts/BusinessLayout';
 import BusinessDashboard from '@/pages/BusinessDashboard';
 import BusinessOrders from '@/pages/BusinessOrders';
 import FarmerListings from '@/pages/FarmerListings';
+import BusinessAnalytics from './pages/BusinessAnalytic';
+import Analytics from './pages/Analytics';
 function App() {
   return (
     <LanguageProvider>
@@ -39,6 +42,8 @@ function App() {
               <Route path="advisory" element={<Advisory />} />
               <Route path="marketplace" element={<Marketplace />} />
               <Route path="listings" element={<FarmerListings />} />
+              <Route path="analytics" element={<Analytics />} />
+              <Route path="settings" element={<Settings />} />
             </Route>
           </Route>
 
@@ -49,6 +54,8 @@ function App() {
             <Route path="/business" element={<BusinessLayout />}>
               <Route index element={<BusinessDashboard />} />
               <Route path="orders" element={<BusinessOrders />} />
+              <Route path="analytics" element={<BusinessAnalytics />} />
+              <Route path="settings" element={<Settings />} />
             </Route>
           </Route>
 

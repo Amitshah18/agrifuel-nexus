@@ -2,7 +2,7 @@ import { useState, ChangeEvent, FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { 
   ArrowLeft, CheckCircle2, ChevronRight, Leaf, Building2, 
-  MapPin, User, ShieldCheck, Phone, FileText, AlertCircle 
+  MapPin, User, ShieldCheck, FileText, AlertCircle, Zap, Shield, Factory
 } from "lucide-react";
 
 export default function Signup() {
@@ -14,12 +14,9 @@ export default function Signup() {
   const totalSteps = 3;
 
   const [formData, setFormData] = useState({
-    // Step 1: Identity
     fullName: "", email: "", mobile: "", businessName: "",
-    // Step 2: Context
     state: "", district: "", tehsil: "", village: "", pincode: "",
     companyType: "", gstin: "",
-    // Step 3: Security
     password: "", confirmPassword: ""
   });
 
@@ -85,7 +82,6 @@ export default function Signup() {
     }
   };
 
-  // Helper for step icons
   const getStepIcon = (stepNum: number) => {
     if (stepNum === 1) return <User className="h-5 w-5" />;
     if (stepNum === 2) return signupType === 'farmer' ? <MapPin className="h-5 w-5" /> : <FileText className="h-5 w-5" />;
@@ -93,54 +89,119 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col py-10 px-4 sm:px-6 lg:px-8 font-sans">
+    <div className="min-h-screen flex bg-[#FAFCFF] font-sans selection:bg-emerald-200 selection:text-emerald-950">
       
-      {/* Top Branding */}
-      <div className="mx-auto w-full max-w-3xl mb-8 text-center animate-in fade-in slide-in-from-top-4">
-        <Link to="/" className="inline-flex items-center gap-2 text-3xl font-extrabold text-gray-900 tracking-tight">
-          <Leaf className="h-8 w-8 text-green-600" /> AgriFuel Nexus
-        </Link>
+      {/* Left Side - Premium Brand Panel (Context Area) */}
+      <div className="hidden lg:flex w-5/12 bg-[#022c22] p-12 flex-col justify-between relative overflow-hidden">
+        
+        {/* Abstract Glowing Orbs & Texture */}
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
+          <div className="absolute -top-[20%] -left-[10%] w-[80%] h-[70%] rounded-full bg-[#059669]/30 blur-[120px]"></div>
+          <div className="absolute bottom-[10%] -right-[20%] w-[60%] h-[60%] rounded-full bg-teal-500/20 blur-[100px]"></div>
+          <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}></div>
+        </div>
+
+        {/* Branding */}
+        <div className="relative z-10">
+          <Link to="/" className="text-3xl font-black text-white flex items-center gap-3 tracking-tighter">
+            <div className="bg-gradient-to-tr from-emerald-500 to-teal-400 p-2.5 rounded-xl shadow-lg shadow-emerald-900/50">
+              <Leaf className="h-7 w-7 text-white" />
+            </div>
+            AgriFuel Nexus
+          </Link>
+          <h1 className="text-4xl font-black text-white mt-12 mb-6 tracking-tighter leading-tight">
+            Join the Modern <br/> Agricultural Ecosystem.
+          </h1>
+          <p className="text-emerald-100/70 text-lg leading-relaxed font-medium mb-12 max-w-md">
+            Whether you're a farmer looking to turn crop waste into profit, or an industrial buyer securing biofuel resources, Nexus is your secure bridge.
+          </p>
+
+          {/* Feature Context Highlights */}
+          <div className="space-y-6">
+            <div className="flex items-start gap-4">
+              <div className="bg-emerald-900/50 p-3 rounded-xl border border-emerald-800/50 shrink-0">
+                <Zap className="h-6 w-6 text-emerald-400" />
+              </div>
+              <div>
+                <h4 className="text-white font-bold text-lg">AI-Powered Farming</h4>
+                <p className="text-emerald-100/60 font-medium text-sm mt-1">Diagnose diseases instantly with our advanced mobile scanner.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-4">
+              <div className="bg-emerald-900/50 p-3 rounded-xl border border-emerald-800/50 shrink-0">
+                <Factory className="h-6 w-6 text-emerald-400" />
+              </div>
+              <div>
+                <h4 className="text-white font-bold text-lg">Direct B2B Marketplace</h4>
+                <p className="text-emerald-100/60 font-medium text-sm mt-1">Bypass middlemen. Trade biomass directly with state refineries.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-4">
+              <div className="bg-emerald-900/50 p-3 rounded-xl border border-emerald-800/50 shrink-0">
+                <Shield className="h-6 w-6 text-emerald-400" />
+              </div>
+              <div>
+                <h4 className="text-white font-bold text-lg">100% Secure Escrow</h4>
+                <p className="text-emerald-100/60 font-medium text-sm mt-1">Funds are locked before pickup and released instantly via OTP.</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Main Card */}
-      <div className={`mx-auto w-full transition-all duration-500 ease-in-out ${stage === 'wizard' ? 'max-w-3xl' : 'max-w-xl'}`}>
-        <div className="bg-white py-10 px-6 sm:px-12 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-3xl border border-gray-100 relative overflow-hidden">
+      {/* Right Side - Interactive Wizard Form */}
+      <div className="w-full lg:w-7/12 flex items-center justify-center p-4 sm:p-8 lg:p-12 relative overflow-y-auto">
+        
+        {/* Soft background glow for the right side */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-emerald-50/50 rounded-full blur-[120px] pointer-events-none -z-10"></div>
+        
+        <div className={`w-full bg-white/80 backdrop-blur-xl p-8 sm:p-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[2.5rem] border border-white relative z-10 transition-all duration-500 ease-in-out ${stage === 'wizard' ? 'max-w-2xl' : 'max-w-xl'}`}>
           
+          {/* Mobile Branding (Hidden on Desktop) */}
+          <div className="lg:hidden flex items-center justify-center gap-2 mb-8">
+            <div className="bg-gradient-to-tr from-emerald-500 to-teal-400 p-2 rounded-lg shadow-sm">
+              <Leaf className="h-5 w-5 text-white" />
+            </div>
+            <span className="font-extrabold text-xl tracking-tight text-emerald-950">AgriFuel Nexus</span>
+          </div>
+
           {/* STAGE 1: Account Type Selection */}
           {stage === "type" && (
             <div className="animate-in fade-in zoom-in-95 duration-500">
               <div className="text-center mb-10">
-                <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight mb-3">Join the Ecosystem</h2>
-                <p className="text-gray-500 font-medium text-lg">How would you like to use AgriFuel Nexus?</p>
+                <h2 className="text-3xl font-black text-emerald-950 tracking-tighter mb-3">Create an Account</h2>
+                <p className="text-slate-500 font-medium">Select how you want to use the platform.</p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <button
                   onClick={() => { setSignupType("farmer"); setStage("wizard"); }}
-                  className="group relative flex flex-col items-center text-center p-8 border-2 border-gray-100 rounded-3xl hover:border-green-500 hover:bg-green-50/30 transition-all duration-300 hover:shadow-xl hover:shadow-green-500/10"
+                  className="group relative flex flex-col items-center text-center p-8 bg-white border border-slate-200 rounded-[2rem] hover:border-emerald-500 hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-300"
                 >
-                  <div className="h-16 w-16 bg-green-100 text-green-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                  <div className="h-16 w-16 bg-emerald-50 border border-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-emerald-500 group-hover:text-white transition-all duration-300 shadow-sm">
                     <Leaf className="h-8 w-8" />
                   </div>
-                  <h3 className="font-extrabold text-gray-900 text-xl mb-2">Farmer / FPO</h3>
-                  <p className="text-sm text-gray-500 font-medium">Access AI advisory and monetize your crop residue directly.</p>
+                  <h3 className="font-bold text-emerald-950 text-lg tracking-tight mb-1">Farmer / FPO</h3>
+                  <p className="text-xs text-slate-500 font-medium">Sell crop residue & access AI advisory.</p>
                 </button>
 
                 <button
                   onClick={() => { setSignupType("buyer"); setStage("wizard"); }}
-                  className="group relative flex flex-col items-center text-center p-8 border-2 border-gray-100 rounded-3xl hover:border-blue-500 hover:bg-blue-50/30 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10"
+                  className="group relative flex flex-col items-center text-center p-8 bg-white border border-slate-200 rounded-[2rem] hover:border-blue-500 hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300"
                 >
-                  <div className="h-16 w-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                  <div className="h-16 w-16 bg-blue-50 border border-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 shadow-sm">
                     <Building2 className="h-8 w-8" />
                   </div>
-                  <h3 className="font-extrabold text-gray-900 text-xl mb-2">Corporate Buyer</h3>
-                  <p className="text-sm text-gray-500 font-medium">Procure sustainable biomass and biofuel resources.</p>
+                  <h3 className="font-bold text-emerald-950 text-lg tracking-tight mb-1">Corporate Buyer</h3>
+                  <p className="text-xs text-slate-500 font-medium">Procure sustainable biomass resources.</p>
                 </button>
               </div>
 
-              <p className="mt-10 text-center text-base text-gray-600 font-medium">
-                Already registered? <Link to="/login" className="font-bold text-green-600 hover:text-green-700">Sign in instead</Link>
-              </p>
+              <div className="mt-12 text-center border-t border-slate-100 pt-6">
+                <p className="text-sm text-slate-600 font-medium">
+                  Already registered? <Link to="/login" className="font-bold text-emerald-600 hover:text-emerald-700 transition-colors">Sign in instead</Link>
+                </p>
+              </div>
             </div>
           )}
 
@@ -151,24 +212,24 @@ export default function Signup() {
               {/* Wizard Header & Progress */}
               <div className="mb-10">
                 <div className="flex items-center justify-between mb-8">
-                  <button onClick={() => setStage("type")} className="flex items-center text-sm font-bold text-gray-400 hover:text-gray-900 transition-colors">
-                    <ArrowLeft className="h-4 w-4 mr-1.5" /> Change Type
+                  <button onClick={() => setStage("type")} className="flex items-center text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-emerald-600 transition-colors bg-white px-3 py-1.5 border border-slate-200 rounded-lg shadow-sm">
+                    <ArrowLeft className="h-3 w-3 mr-1.5" /> Back
                   </button>
-                  <div className="px-4 py-1.5 bg-gray-100 rounded-full text-xs font-bold text-gray-600 uppercase tracking-wider">
+                  <div className="px-3 py-1.5 bg-emerald-50 rounded-lg border border-emerald-100 text-[10px] font-bold text-emerald-700 uppercase tracking-widest">
                     {signupType === 'farmer' ? 'Farmer Registration' : 'Corporate Registration'}
                   </div>
                 </div>
 
-                <div className="flex justify-between relative">
-                  <div className="absolute top-1/2 left-0 w-full h-1 bg-gray-100 -z-10 -translate-y-1/2 rounded-full"></div>
-                  <div className="absolute top-1/2 left-0 h-1 bg-green-500 -z-10 -translate-y-1/2 rounded-full transition-all duration-500" style={{ width: `${((step - 1) / (totalSteps - 1)) * 100}%` }}></div>
+                <div className="flex justify-between relative px-2">
+                  <div className="absolute top-1/2 left-0 w-full h-1 bg-slate-100 -z-10 -translate-y-1/2 rounded-full"></div>
+                  <div className="absolute top-1/2 left-0 h-1 bg-[#059669] -z-10 -translate-y-1/2 rounded-full transition-all duration-500" style={{ width: `${((step - 1) / (totalSteps - 1)) * 100}%` }}></div>
                   
                   {[1, 2, 3].map((s) => (
                     <div key={s} className="flex flex-col items-center gap-2">
-                      <div className={`h-10 w-10 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300 ${step >= s ? 'bg-green-600 text-white shadow-md shadow-green-500/30' : 'bg-white border-2 border-gray-200 text-gray-400'}`}>
+                      <div className={`h-10 w-10 rounded-xl flex items-center justify-center font-bold text-sm transition-all duration-300 ${step >= s ? 'bg-[#059669] text-white shadow-lg shadow-emerald-500/30' : 'bg-white border border-slate-200 text-slate-300'}`}>
                         {step > s ? <CheckCircle2 className="h-5 w-5" /> : getStepIcon(s)}
                       </div>
-                      <span className={`text-xs font-bold uppercase tracking-wider hidden sm:block ${step >= s ? 'text-gray-900' : 'text-gray-400'}`}>
+                      <span className={`text-[10px] font-bold uppercase tracking-widest hidden sm:block ${step >= s ? 'text-emerald-950' : 'text-slate-400'}`}>
                         {s === 1 ? 'Identity' : s === 2 ? (signupType === 'farmer' ? 'Location' : 'Details') : 'Security'}
                       </span>
                     </div>
@@ -182,11 +243,11 @@ export default function Signup() {
                 {/* STEP 1: Basic Identity */}
                 {step === 1 && (
                   <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
-                    <h3 className="text-2xl font-extrabold text-gray-900 mb-6">Let's start with the basics</h3>
+                    <h3 className="text-3xl font-black text-emerald-950 tracking-tighter mb-8">Let's start with the basics</h3>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="col-span-1 md:col-span-2 space-y-1.5">
-                        <label className="block text-sm font-bold text-gray-700">
+                      <div className="col-span-1 md:col-span-2 space-y-2">
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">
                           {signupType === "farmer" ? "Full Name (As per Aadhaar/Bank) *" : "Registered Business Name *"}
                         </label>
                         <input 
@@ -194,71 +255,71 @@ export default function Signup() {
                           name={signupType === "farmer" ? "fullName" : "businessName"} 
                           value={signupType === "farmer" ? formData.fullName : formData.businessName} 
                           onChange={handleInputChange} 
-                          className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all font-medium text-gray-900" 
+                          className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-medium text-slate-900 shadow-sm" 
                         />
                       </div>
 
-                      <div className="space-y-1.5">
-                        <label className="block text-sm font-bold text-gray-700">Mobile Number *</label>
+                      <div className="space-y-2">
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Mobile Number *</label>
                         <div className="relative">
                           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <span className="text-gray-500 font-medium">+91</span>
+                            <span className="text-slate-400 font-medium">+91</span>
                           </div>
                           <input 
                             required type="tel" name="mobile" maxLength={10} 
                             value={formData.mobile} onChange={handleInputChange} 
-                            className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all font-medium text-gray-900 tracking-wide" 
+                            className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-medium text-slate-900 tracking-wide shadow-sm" 
                           />
                         </div>
                       </div>
 
-                      <div className="space-y-1.5">
-                        <label className="block text-sm font-bold text-gray-700">Email Address *</label>
+                      <div className="space-y-2">
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Email Address *</label>
                         <input 
                           required type="email" name="email" 
                           value={formData.email} onChange={handleInputChange} 
-                          className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all font-medium text-gray-900" 
+                          className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-medium text-slate-900 shadow-sm" 
                         />
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* STEP 2: Location / Details (Indian Context) */}
+                {/* STEP 2: Location / Details */}
                 {step === 2 && (
                   <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
-                    <h3 className="text-2xl font-extrabold text-gray-900 mb-6">
+                    <h3 className="text-3xl font-black text-emerald-950 tracking-tighter mb-8">
                       {signupType === "farmer" ? "Where is your farm located?" : "Corporate Registration Details"}
                     </h3>
                     
                     {signupType === "farmer" ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-1.5">
-                          <label className="block text-sm font-bold text-gray-700">State *</label>
-                          <input required name="state" value={formData.state} onChange={handleInputChange} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all font-medium" />
+                        <div className="space-y-2">
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">State *</label>
+                          <input required name="state" value={formData.state} onChange={handleInputChange} className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-medium shadow-sm" />
                         </div>
-                        <div className="space-y-1.5">
-                          <label className="block text-sm font-bold text-gray-700">District *</label>
-                          <input required name="district" value={formData.district} onChange={handleInputChange} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all font-medium" />
+                        <div className="space-y-2">
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">District *</label>
+                          <input required name="district" value={formData.district} onChange={handleInputChange} className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-medium shadow-sm" />
                         </div>
-                        <div className="space-y-1.5">
-                          <label className="block text-sm font-bold text-gray-700">Tehsil / Taluka *</label>
-                          <input required name="tehsil" value={formData.tehsil} onChange={handleInputChange} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all font-medium" />
+                        <div className="space-y-2">
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Tehsil / Taluka *</label>
+                          <input required name="tehsil" value={formData.tehsil} onChange={handleInputChange} className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-medium shadow-sm" />
                         </div>
-                        <div className="space-y-1.5">
-                          <label className="block text-sm font-bold text-gray-700">Village / Gram Panchayat *</label>
-                          <input required name="village" value={formData.village} onChange={handleInputChange} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all font-medium" />
+                        <div className="space-y-2">
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Village / Panchayat *</label>
+                          <input required name="village" value={formData.village} onChange={handleInputChange} className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-medium shadow-sm" />
                         </div>
-                        <div className="space-y-1.5 col-span-1 md:col-span-2">
-                          <label className="block text-sm font-bold text-gray-700">PIN Code *</label>
-                          <input required name="pincode" maxLength={6} value={formData.pincode} onChange={handleInputChange} className="w-full md:w-1/2 px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all font-medium tracking-wide" />
+                        <div className="space-y-2 col-span-1 md:col-span-2">
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">PIN Code *</label>
+                          <input required name="pincode" maxLength={6} value={formData.pincode} onChange={handleInputChange} className="w-full md:w-1/2 px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-medium tracking-wide shadow-sm" />
                         </div>
                       </div>
                     ) : (
                       <div className="space-y-6">
-                        <div className="space-y-1.5">
-                          <label className="block text-sm font-bold text-gray-700">Industry Sector *</label>
-                          <select required name="companyType" value={formData.companyType} onChange={handleInputChange} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all font-medium text-gray-900 cursor-pointer">
+                        <div className="space-y-2">
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Industry Sector *</label>
+                          <select required name="companyType" value={formData.companyType} onChange={handleInputChange} className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all font-medium text-slate-900 cursor-pointer shadow-sm">
                             <option value="">Select your sector</option>
                             <option value="Biofuel Refinery">Biofuel Refinery (Ethanol/Biodiesel)</option>
                             <option value="Biomass Pellet Mfg">Biomass Pellet Manufacturer</option>
@@ -266,10 +327,10 @@ export default function Signup() {
                             <option value="Aggregator">Supply Chain Aggregator</option>
                           </select>
                         </div>
-                        <div className="space-y-1.5">
-                          <label className="block text-sm font-bold text-gray-700">GSTIN Number *</label>
-                          <input required name="gstin" maxLength={15} value={formData.gstin} onChange={handleInputChange} placeholder="e.g. 22AAAAA0000A1Z5" className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all font-medium uppercase tracking-wider" />
-                          <p className="text-xs text-gray-500 font-medium mt-1">Required for B2B marketplace compliance.</p>
+                        <div className="space-y-2">
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">GSTIN Number *</label>
+                          <input required name="gstin" maxLength={15} value={formData.gstin} onChange={handleInputChange} placeholder="e.g. 22AAAAA0000A1Z5" className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all font-medium uppercase tracking-wider shadow-sm" />
+                          <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-widest">Required for B2B marketplace compliance.</p>
                         </div>
                       </div>
                     )}
@@ -279,15 +340,15 @@ export default function Signup() {
                 {/* STEP 3: Security */}
                 {step === 3 && (
                   <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
-                    <h3 className="text-2xl font-extrabold text-gray-900 mb-6">Secure your account</h3>
+                    <h3 className="text-3xl font-black text-emerald-950 tracking-tighter mb-8">Secure your account</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-1.5">
-                        <label className="block text-sm font-bold text-gray-700">Create Password *</label>
-                        <input required type="password" name="password" value={formData.password} onChange={handleInputChange} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all font-medium text-gray-900" />
+                      <div className="space-y-2">
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Create Password *</label>
+                        <input required type="password" name="password" value={formData.password} onChange={handleInputChange} className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-medium text-slate-900 shadow-sm" />
                       </div>
-                      <div className="space-y-1.5">
-                        <label className="block text-sm font-bold text-gray-700">Confirm Password *</label>
-                        <input required type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleInputChange} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all font-medium text-gray-900" />
+                      <div className="space-y-2">
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest">Confirm Password *</label>
+                        <input required type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleInputChange} className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-medium text-slate-900 shadow-sm" />
                       </div>
                     </div>
                   </div>
@@ -295,21 +356,21 @@ export default function Signup() {
 
                 {/* Global Error Banner */}
                 {error && (
-                  <div className="mt-6 p-4 bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl font-bold flex items-start gap-3 animate-in fade-in">
+                  <div className="mt-8 p-4 bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl font-bold flex items-start gap-3 animate-in fade-in">
                     <AlertCircle className="h-5 w-5 shrink-0" /> <p>{error}</p>
                   </div>
                 )}
 
                 {/* Bottom Navigation */}
-                <div className="flex items-center justify-between pt-8 mt-8 border-t border-gray-100">
+                <div className="flex items-center justify-between pt-8 mt-10 border-t border-slate-100">
                   {step > 1 ? (
-                    <button type="button" onClick={() => {setStep(step - 1); setError("");}} className="px-6 py-3 font-bold text-gray-500 hover:text-gray-900 transition-colors">
-                      Back
+                    <button type="button" onClick={() => {setStep(step - 1); setError("");}} className="px-6 py-3 font-bold text-slate-400 hover:text-emerald-600 transition-colors uppercase tracking-widest text-xs">
+                      Previous Step
                     </button>
                   ) : <div></div>}
                   
-                  <button type="submit" disabled={loading} className="flex items-center gap-2 px-8 py-4 rounded-xl font-bold text-white bg-gray-900 hover:bg-gray-800 shadow-[0_4px_14px_0_rgb(0,0,0,0.1)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.15)] transition-all disabled:opacity-50">
-                    {step === totalSteps ? (loading ? "Setting up..." : "Create Account") : "Continue to Next Step"}
+                  <button type="submit" disabled={loading} className="flex items-center gap-2 px-8 py-4 rounded-xl font-bold text-white bg-[#022c22] hover:bg-[#064e3b] shadow-lg shadow-emerald-900/20 transition-all active:scale-95 disabled:opacity-50">
+                    {step === totalSteps ? (loading ? "Setting up..." : "Complete Registration") : "Continue to Next Step"}
                     {step !== totalSteps && <ChevronRight className="h-5 w-5" />}
                   </button>
                 </div>

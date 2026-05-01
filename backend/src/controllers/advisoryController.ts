@@ -37,26 +37,24 @@ export const analyzeCrop = async (req: Request, res: Response): Promise<void> =>
 
     // 2. DYNAMIC MULTI-LANGUAGE GEMINI PROMPT (Forcing JSON output)
     const prompt = `
-      I am a farmer. Today's date is ${date || new Date().toISOString()}. 
-      My GPS coordinates are Latitude: ${latitude || 'Unknown'}, Longitude: ${longitude || 'Unknown'}.
-      
-      My crop has been diagnosed by my AI Vision model. 
-      Crop (English): ${plant_name.replace(/_/g, ' ')}
-      Diagnosis (English): ${disease_name.replace(/_/g, ' ')}
+        You are an expert Agricultural AI. 
+        I have detected a crop condition. 
+        - Plant: ${plant_name}
+        - Condition/Disease: ${disease_name}
+        - Target Language: ${language}
 
-      Act as an expert agricultural advisor. 
-      CRITICAL INSTRUCTIONS:
-      1. You MUST respond entirely in the ${language} language.
-      2. You MUST translate the disease name into a local, commonly understood name in ${language}.
-      3. Provide a detailed but easy-to-understand step-by-step action plan.
-      4. DO NOT use markdown symbols (* or #). Use simple dashes (-) for lists.
-      5. You MUST return ONLY a valid JSON object. Do not include markdown code blocks like \`\`\`json.
-
-      Return EXACTLY this JSON structure:
-      {
-        "localDiseaseName": "Translated disease name in ${language}",
-        "advisoryText": "The full, natural spoken advisory in ${language} (Cause, Steps, and Weather advice combined)."
-      }
+        Provide a minimal, highly actionable advisory report following these STRICT RULES:
+        1. Translate both the Plant Name and the local/common name of the Disease into the ${language}.
+        2. Provide EXACTLY 3 to 6 actionable steps for treatment, prevention, or next steps.
+        3. Language: The entire response MUST be completely in the ${language} script.
+        4. Write each actionable step as a concise sentence. End every sentence with a standard English period "." followed by a single space. 
+        5. DO NOT use the Hindi/Bengali Purna Viram (।). DO NOT use bullet points (-, *), line breaks, or numbered lists (1., 2.).
+        
+        OUTPUT AS A STRICT JSON OBJECT with exactly two keys:
+        {
+          "localDiseaseName": "The translated disease name here",
+          "advisoryText": "First action. Second action. Third action."
+        }
     `;
 
     let finalData = { localDiseaseName: disease_name, advisoryText: "" };
@@ -65,22 +63,25 @@ export const analyzeCrop = async (req: Request, res: Response): Promise<void> =>
     while (attempts < 3) {
       try {
         const llmResponse = await ai.models.generateContent({
-          model: "gemini-2.5-flash",
+          model: "gemini-3.1-flash-lite-preview",
           contents: prompt,
+          config: {
+            // THIS IS THE MAGIC FIX: Forces Gemini to return valid, raw JSON without markdown
+            responseMimeType: "application/json", 
+          }
         });
         
-        const rawText = llmResponse.text || "{}";
-        // Clean the response in case Gemini accidentally adds markdown code blocks
-        const cleanedText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-        const parsedResponse = JSON.parse(cleanedText);
+        // No more regex replace hacks needed, we can parse it directly
+        const parsedResponse = JSON.parse(llmResponse.text || "{}");
         
         finalData.localDiseaseName = parsedResponse.localDiseaseName || disease_name;
         finalData.advisoryText = parsedResponse.advisoryText || "Advisory unavailable.";
-        break;
+        break; // Success! Break out of the retry loop.
         
       } catch (error: any) {
         attempts++;
-        if (attempts >= 3) throw new Error("Gemini AI is busy. Please try again.");
+        console.error(`Gemini Parsing Attempt ${attempts} Failed:`, error);
+        if (attempts >= 3) throw new Error("Gemini AI is busy or failed to parse. Please try again.");
         await new Promise(resolve => setTimeout(resolve, 2000));
       }
     }

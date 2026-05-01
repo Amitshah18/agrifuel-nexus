@@ -7,16 +7,22 @@ export default function DashboardLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    // Flex Col layout ensures Navbar is at the top
+    <div className="flex flex-col h-screen bg-[#F4F7F4] overflow-hidden font-sans antialiased">
+      
+      {/* Full width Navbar */}
       <Navbar onMenuClick={() => setIsSidebarOpen(true)} />
+      
+      {/* Sidebar and Main Content area below Navbar */}
       <div className="flex flex-1 overflow-hidden relative">
         <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
         
-        {/* The Outlet acts as a placeholder for your nested pages */}
-        <main className="flex-1 p-6 md:p-8 lg:p-10 overflow-y-auto w-full">
+        {/* Main content scrolls independently */}
+        <main className="flex-1 overflow-y-auto w-full relative">
           <Outlet /> 
         </main>
       </div>
+      
     </div>
   );
 }

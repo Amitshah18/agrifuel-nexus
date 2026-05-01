@@ -1,42 +1,79 @@
-import React, { useState, useEffect } from 'react';
-import { Package, MapPin, IndianRupee, ShieldCheck, Handshake, Search, X, Phone, Map, CheckCircle2, TrendingUp, SlidersHorizontal, Image as ImageIcon, Loader2, FileText } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Package, MapPin, IndianRupee, ShieldCheck, Handshake, Search, X, Phone, Map, CheckCircle2, TrendingUp, SlidersHorizontal, Image as ImageIcon, Loader2, Leaf, BarChart3, Clock, AlertCircle } from 'lucide-react';
 
 export default function BusinessDashboard() {
   const [listings, setListings] = useState<any[]>([]);
-  const [sentOffers, setSentOffers] = useState<string[]>([]);
+  const [sentOffers, setSentOffers] = useState<any[]>([]); // Now stores full offer objects
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
-  // Filtering & Search State
   const [filterType, setFilterType] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [maxPrice, setMaxPrice] = useState(15000);
 
-  // Modals & Action State
   const [buyingListing, setBuyingListing] = useState<any>(null);
   const [offeringListing, setOfferingListing] = useState<any>(null);
   const [bookingSuccess, setBookingSuccess] = useState<any>(null);
   
-  // Form States
   const [pickupDate, setPickupDate] = useState('');
   const [offerPrice, setOfferPrice] = useState('');
   const [offerMessage, setOfferMessage] = useState('');
 
-  useEffect(() => { fetchListingsAndOffers(); }, []);
+  // Initial Fetch & Background Polling (Concurrency)
+  useEffect(() => { 
+    fetchData(); 
+    const interval = setInterval(() => fetchData(true), 10000); // Poll every 10s for status updates
+    return () => clearInterval(interval);
+  }, []);
 
-  const fetchListingsAndOffers = async () => {
+  const fetchData = async (background = false) => {
+    if (background) setIsRefreshing(true);
     try {
       const token = localStorage.getItem('af_token');
+      const [listRes, offerRes] = await Promise.all([
+        fetch('/api/listings', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch('/api/transactions/buyer/offers', { headers: { Authorization: `Bearer ${token}` } })
+      ]);
       
-      const res = await fetch('/api/listings', { headers: { Authorization: `Bearer ${token}` } });
-      const data = await res.json();
-      setListings(data.filter((item: any) => item.status === 'available'));
+      const listData = await listRes.json();
+      const offerData = await offerRes.json();
+      
+      setListings(listData.filter((item: any) => item.status === 'available'));
+      if (Array.isArray(offerData)) setSentOffers(offerData);
+    } catch (error) { 
+      console.error(error); 
+    } finally { 
+      setLoading(false);
+      setIsRefreshing(false);
+    }
+  };
 
-      const offersRes = await fetch('/api/transactions/buyer/offers', { headers: { Authorization: `Bearer ${token}` } });
-      const offersData = await offersRes.json();
-      if (Array.isArray(offersData)) {
-        setSentOffers(offersData.map((offer: any) => offer.listing));
-      }
-    } catch (error) { console.error(error); } finally { setLoading(false); }
+  const handleMakeOffer = async () => {
+    if (!offerPrice) return alert("Enter your offer price");
+    
+    // OPTIMISTIC UI UPDATE: Instantly move it to the offers section
+    const tempOffer = {
+      _id: 'temp_' + Date.now(),
+      listing: offeringListing,
+      status: 'pending',
+      offeredPricePerTon: Number(offerPrice),
+      message: offerMessage
+    };
+    setSentOffers(prev => [...prev, tempOffer]);
+    setOfferingListing(null); setOfferPrice(''); setOfferMessage('');
+
+    try {
+      const token = localStorage.getItem('af_token');
+      const res = await fetch('/api/transactions/offer', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ listingId: tempOffer.listing._id, offeredPricePerTon: tempOffer.offeredPricePerTon, requestedQuantity: tempOffer.listing.quantity, message: tempOffer.message })
+      });
+      if (!res.ok) throw new Error("Offer failed");
+      fetchData(true); // Sync real DB ID
+    } catch (error) { 
+      alert("Failed to send offer.");
+      fetchData(true); // Revert optimistic update on failure
+    }
   };
 
   const handleBuyNow = async () => {
@@ -44,295 +81,288 @@ export default function BusinessDashboard() {
     try {
       const token = localStorage.getItem('af_token');
       const res = await fetch('/api/transactions/book', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ listingId: buyingListing._id, pickupDate })
       });
       const data = await res.json();
-      if (res.ok) {
-        setBookingSuccess(data); 
-        setBuyingListing(null); 
-        fetchListingsAndOffers();
-      } else alert(data.message);
+      if (res.ok) { setBookingSuccess(data); setBuyingListing(null); fetchData(true); } 
+      else alert(data.message);
     } catch (error) { alert("Payment processing failed."); }
   };
 
-  const handleMakeOffer = async () => {
-    if (!offerPrice) return alert("Enter your offer price");
-    try {
-      const token = localStorage.getItem('af_token');
-      const res = await fetch('/api/transactions/offer', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ 
-          listingId: offeringListing._id, 
-          offeredPricePerTon: Number(offerPrice), 
-          requestedQuantity: offeringListing.quantity, 
-          message: offerMessage 
-        })
-      });
-      if (res.ok) {
-        alert("Offer sent to farmer successfully!");
-        setOfferingListing(null); setOfferPrice(''); setOfferMessage('');
-        fetchListingsAndOffers(); 
-      }
-    } catch (error) { alert("Failed to send offer."); }
+  const optimizeImageUrl = (imgStr: string) => {
+    if (!imgStr) return null;
+    if (imgStr.startsWith('http') || imgStr.startsWith('data:image')) return imgStr;
+    return `http://localhost:5000/${imgStr.replace(/^\//, '')}`; 
   };
 
-  const calculateMatchScore = (listing: any) => {
-    let score = 70;
-    if (listing.quantity >= 10) score += 15;
-    if (listing.pricePerTon <= 5000) score += 10;
-    return Math.min(score, 99);
-  };
+  // --- LOGIC: SPLIT MARKET LISTINGS vs ACTIVE OFFERS ---
+  const activeOffers = sentOffers.filter(o => o.status === 'pending' || o.status === 'accepted');
+  const activeOfferListingIds = activeOffers.map(o => typeof o.listing === 'object' ? o.listing._id : o.listing);
 
-  const filteredListings = listings.filter(listing => {
+  // Filter listings for the main market (excluding those currently in negotiation)
+  const marketListings = listings.filter(listing => {
+    if (activeOfferListingIds.includes(listing._id)) return false; // Hide if negotiating
     const matchesType = filterType === 'All' || listing.residueType === filterType;
     const matchesPrice = listing.pricePerTon <= maxPrice;
-    const matchesSearch = listing.location?.district?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          listing.residueType?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = listing.location?.district?.toLowerCase().includes(searchQuery.toLowerCase()) || listing.residueType?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesType && matchesPrice && matchesSearch;
   });
 
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-[70vh] w-full text-blue-600">
-        <Loader2 className="animate-spin mb-4" size={40} />
-        <p className="font-bold text-gray-500 animate-pulse">Loading Live Market...</p>
-      </div>
-    );
-  }
+  const marketKPIs = useMemo(() => {
+    if (marketListings.length === 0) return { totalTons: 0, avgPrice: 0, co2Offset: 0 };
+    const totalTons = marketListings.reduce((sum, item) => sum + (item.quantity || 0), 0);
+    const avgPrice = marketListings.reduce((sum, item) => sum + (item.pricePerTon || 0), 0) / marketListings.length;
+    return { totalTons: totalTons.toFixed(1), avgPrice: Math.round(avgPrice), co2Offset: Math.round(totalTons * 1.5) };
+  }, [marketListings]);
+
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-64px)] w-full text-zinc-900 bg-white">
+      <Loader2 className="animate-spin mb-3 text-zinc-400" size={28} />
+      <p className="font-medium text-zinc-500 text-xs tracking-wide">Syncing market data...</p>
+    </div>
+  );
 
   const categories = ['All', 'Rice Husk', 'Wheat Straw', 'Sugarcane Bagasse', 'Corn Stover'];
 
   return (
-    <div className="relative min-h-[calc(100vh-80px)] w-full min-w-0 bg-slate-50 overflow-x-hidden font-sans">
-      
-      <div className="absolute inset-0 z-0 opacity-[0.4]" style={{ backgroundImage: 'radial-gradient(#94a3b8 1.5px, transparent 1.5px)', backgroundSize: '24px 24px' }}></div>
-
-      <div className="relative z-10 w-full min-w-0 max-w-7xl mx-auto space-y-6 pb-12 px-4 sm:px-6 lg:px-8 pt-6">
+    <div className="relative min-h-[calc(100vh-64px)] w-full bg-[#fcfcfc] font-sans pb-12 antialiased">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
         
-        {/* PREMIUM HERO BANNER */}
-        <div className="bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 rounded-2xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden w-full">
-          <div className="absolute -top-24 -right-24 w-80 h-80 bg-blue-500/30 rounded-full blur-3xl"></div>
-          <div className="absolute -bottom-10 right-4 opacity-[0.07] pointer-events-none"><TrendingUp size={160} /></div>
-          
-          <div className="relative z-10 max-w-2xl">
-            <span className="bg-blue-500/30 border border-blue-400/30 px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase mb-4 inline-block backdrop-blur-md">
-              Corporate Procurement
-            </span>
-            <h1 className="text-2xl md:text-3xl font-black mb-2 leading-tight tracking-tight">
-              Secure high-quality biomass, directly from the source.
+        {/* COMPACT HEADER & KPIS */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-zinc-900 tracking-tight flex items-center gap-2">
+              Procurement Market 
+              {isRefreshing && <Loader2 size={14} className="animate-spin text-zinc-400" />}
             </h1>
-            <p className="text-blue-100 font-medium text-sm leading-relaxed max-w-xl">
-              Our AI engine matches your facility with the most cost-effective and logistically viable crop residue across India.
-            </p>
+            <p className="text-zinc-500 text-sm mt-0.5">Source biomass directly from verified farmers.</p>
+          </div>
+          
+          <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
+            <div className="bg-white border border-zinc-200 rounded-lg px-4 py-2.5 min-w-[130px] shadow-sm">
+              <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5 mb-0.5"><Package size={12}/> Volume</span>
+              <p className="text-lg font-black text-zinc-900">{marketKPIs.totalTons} <span className="text-xs text-zinc-400 font-semibold">T</span></p>
+            </div>
+            <div className="bg-white border border-zinc-200 rounded-lg px-4 py-2.5 min-w-[130px] shadow-sm">
+              <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5 mb-0.5"><TrendingUp size={12}/> Avg Price</span>
+              <p className="text-lg font-black text-zinc-900">₹{marketKPIs.avgPrice} <span className="text-xs text-zinc-400 font-semibold">/t</span></p>
+            </div>
           </div>
         </div>
 
-        {/* HORIZONTAL CONTROL BAR */}
-        <div className="bg-white/60 backdrop-blur-xl border border-white/80 shadow-sm rounded-2xl p-2 grid grid-cols-1 lg:grid-cols-12 gap-3 sticky top-4 z-20 w-full">
-          <div className="relative w-full lg:col-span-3 group">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 transition-colors" size={16} />
-            <input type="text" placeholder="Search districts..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-white/50 hover:bg-white/80 border border-gray-200/80 focus:border-blue-300 focus:bg-white rounded-xl pl-9 pr-4 py-2.5 text-sm font-medium text-gray-900 outline-none transition-all placeholder:text-gray-400 shadow-sm"/>
+        {/* ULTRA-MINIMAL FILTER BAR */}
+        <div className="bg-white border border-zinc-200 rounded-lg p-1.5 flex flex-col lg:flex-row gap-1.5 shadow-sm sticky top-4 z-20">
+          <div className="relative w-full lg:w-64 shrink-0">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={14} />
+            <input type="text" placeholder="Search locations..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-transparent focus:bg-zinc-50 rounded-md pl-8 pr-3 py-1.5 text-sm font-medium text-zinc-900 outline-none transition-all placeholder:text-zinc-400"/>
           </div>
 
-          <div className="w-full lg:col-span-6 overflow-x-auto hide-scrollbar flex items-center bg-gray-200/40 p-1 rounded-xl border border-gray-100/50">
+          <div className="flex-1 flex items-center gap-1 overflow-x-auto hide-scrollbar border-l border-zinc-100 pl-2">
             {categories.map(type => (
-              <button key={type} onClick={() => setFilterType(type)} className={`whitespace-nowrap px-4 py-2 rounded-lg text-xs font-bold transition-all duration-300 flex-1 text-center ${filterType === type ? 'bg-white text-blue-700 shadow-sm border border-gray-200/50' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200/50'}`}>
+              <button key={type} onClick={() => setFilterType(type)} className={`whitespace-nowrap px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${filterType === type ? 'bg-zinc-900 text-white' : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100'}`}>
                 {type}
               </button>
             ))}
           </div>
 
-          <div className="w-full lg:col-span-3 flex items-center gap-3 bg-white/50 p-2 rounded-xl border border-gray-200/80 shadow-sm px-4">
-            <SlidersHorizontal size={14} className="text-gray-400 shrink-0" />
-            <div className="flex-1 flex flex-col min-w-0">
+          <div className="w-full lg:w-56 shrink-0 flex items-center gap-3 border-l border-zinc-100 pl-3 pr-2 py-1">
+            <div className="flex-1 flex flex-col">
               <div className="flex justify-between items-center mb-1">
-                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Max Price</span>
-                <span className="text-[11px] font-black text-blue-700 truncate">₹{(maxPrice/1000).toFixed(1)}k</span>
+                <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">Max ₹/t</span>
+                <span className="text-xs font-bold text-zinc-900">₹{(maxPrice/1000).toFixed(1)}k</span>
               </div>
-              <input type="range" min="1000" max="15000" step="500" value={maxPrice} onChange={(e) => setMaxPrice(Number(e.target.value))} className="w-full accent-blue-600 h-1 bg-gray-200 rounded-full appearance-none cursor-pointer" />
+              <input type="range" min="1000" max="15000" step="500" value={maxPrice} onChange={(e) => setMaxPrice(Number(e.target.value))} className="w-full accent-zinc-900 h-1 bg-zinc-200 rounded-full appearance-none cursor-pointer" />
             </div>
           </div>
         </div>
 
-        {/* THE MARKET FEED */}
-        {filteredListings.length === 0 ? (
-          <div className="bg-white/70 backdrop-blur-md border border-white rounded-2xl p-12 text-center shadow-sm flex flex-col items-center justify-center w-full">
-            <div className="h-16 w-16 bg-gray-100 rounded-full flex items-center justify-center mb-4"><Package className="text-gray-400" size={28} /></div>
-            <h3 className="text-lg font-bold text-gray-900 mb-2">No biomass found</h3>
-            <p className="text-gray-500 text-sm font-medium max-w-sm mx-auto">We couldn't find any listings matching your current filters.</p>
-            <button onClick={() => {setFilterType('All'); setMaxPrice(15000); setSearchQuery('');}} className="mt-6 text-sm text-blue-600 font-bold hover:bg-blue-50 px-4 py-2 rounded-lg transition-colors">Clear All Filters</button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 w-full">
-            {filteredListings.map((listing) => {
-              const matchScore = calculateMatchScore(listing);
-              const alreadyOffered = sentOffers.includes(listing._id);
-              
-              return (
-                <div key={listing._id} className="bg-slate-200/60 backdrop-blur-xl border border-slate-300/60 shadow-sm hover:shadow-lg hover:border-blue-300 hover:-translate-y-1 rounded-2xl overflow-hidden flex flex-col transition-all duration-300 group cursor-pointer">
-                  
-                  {/* FIXED IMAGE LOGIC: Render image directly since it is Base64 */}
-                  <div className="h-32 w-full relative bg-gray-100 overflow-hidden border-b border-slate-300/50">
-                    {listing.images && listing.images.length > 0 ? (
-                      <img src={listing.images[0]} alt="Biomass" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-slate-200/50 to-gray-100 flex flex-col items-center justify-center group-hover:scale-105 transition-transform duration-500">
-                        <ImageIcon className="text-gray-400 mb-2" size={24} />
-                        <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">No Image Provided</span>
-                      </div>
-                    )}
+        {/* SECTION 1: ACTIVE NEGOTIATIONS (OFFERS MADE) */}
+        {activeOffers.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-sm font-black text-zinc-900 uppercase tracking-widest mb-3 flex items-center gap-2">
+              <Handshake size={16} className="text-blue-500"/> Active Negotiations & Offers
+            </h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              {activeOffers.map(offer => {
+                const listing = typeof offer.listing === 'object' ? offer.listing : listings.find(l => l._id === offer.listing);
+                if (!listing) return null;
+                const isAccepted = offer.status === 'accepted';
 
-                    <div className="absolute top-3 left-3 right-3 flex justify-between items-start">
-                      <span className="text-[10px] font-bold text-gray-700 bg-white/90 backdrop-blur-md border border-white/50 px-2.5 py-1 rounded shadow-sm uppercase tracking-wider">{listing.residueType}</span>
-                      <div className="bg-white/90 backdrop-blur-md text-green-700 px-2 py-1 rounded flex items-center gap-1.5 border border-white/50 shadow-sm">
-                        <div className={`w-1.5 h-1.5 rounded-full ${matchScore >= 80 ? 'bg-green-500 animate-pulse' : 'bg-green-500'}`}></div>
-                        <span className="font-bold text-[9px] uppercase tracking-wider">{matchScore}% Match</span>
+                return (
+                  <div key={offer._id} className={`bg-white border ${isAccepted ? 'border-green-400 shadow-[0_0_15px_rgba(74,222,128,0.15)]' : 'border-zinc-200 shadow-sm'} rounded-xl p-4 flex items-center justify-between gap-4 transition-all`}>
+                    <div className="flex items-center gap-4">
+                      <div className="h-12 w-12 rounded-lg bg-zinc-100 overflow-hidden shrink-0 border border-zinc-200">
+                        {optimizeImageUrl(listing.images?.[0]) ? (
+                           <img src={optimizeImageUrl(listing.images?.[0])!} alt="" className="w-full h-full object-cover" />
+                        ) : <ImageIcon className="m-auto mt-3 text-zinc-300" size={20}/>}
                       </div>
+                      <div>
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="text-sm font-bold text-zinc-900">{listing.quantity}T {listing.residueType}</span>
+                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${isAccepted ? 'bg-green-100 text-green-700' : 'bg-blue-50 text-blue-600'}`}>
+                            {isAccepted ? 'Accepted' : 'Pending'}
+                          </span>
+                        </div>
+                        <p className="text-xs font-medium text-zinc-500">Your Offer: <span className="text-zinc-900 font-bold">₹{offer.offeredPricePerTon}/t</span> (vs Ask: ₹{listing.pricePerTon})</p>
+                      </div>
+                    </div>
+                    
+                    <div className="shrink-0">
+                      {isAccepted ? (
+                        <button 
+                          onClick={() => setBuyingListing({...listing, pricePerTon: offer.offeredPricePerTon})} // Override price with accepted offer
+                          className="bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm"
+                        >
+                          <ShieldCheck size={14}/> Schedule & Pay
+                        </button>
+                      ) : (
+                        <div className="text-[10px] font-bold text-zinc-400 flex items-center gap-1.5 bg-zinc-50 px-3 py-2 rounded-lg border border-zinc-100">
+                          <Clock size={12}/> Awaiting Farmer
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* SECTION 2: LIVE MARKET GRID */}
+        <div>
+          <h2 className="text-sm font-black text-zinc-900 uppercase tracking-widest mb-3 flex items-center gap-2">
+            <Package size={16} className="text-zinc-400"/> Available Market Inventory
+          </h2>
+          {marketListings.length === 0 ? (
+            <div className="bg-white border border-dashed border-zinc-200 rounded-xl p-8 text-center">
+              <BarChart3 className="text-zinc-300 mb-2 mx-auto" size={24} />
+              <h3 className="text-sm font-bold text-zinc-900 mb-1">Market Empty</h3>
+              <p className="text-zinc-500 text-xs">No matching listings found outside of your active negotiations.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 md:grid-cols-3 gap-4">
+              {marketListings.map((listing) => (
+                <div key={listing._id} className="bg-white border border-zinc-200 shadow-sm hover:shadow-md hover:border-zinc-300 rounded-xl overflow-hidden flex flex-col transition-all duration-200 group">
+                  <div className="h-32 w-full relative bg-zinc-50 border-b border-zinc-100">
+                    {optimizeImageUrl(listing.images?.[0]) ? (
+                      <img src={optimizeImageUrl(listing.images?.[0])!} alt="Crop" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-50"><ImageIcon className="text-zinc-300" size={20} /></div>
+                    )}
+                    <div className="absolute bottom-2 left-2 right-2 flex justify-between items-center">
+                      <span className="text-[9px] font-bold text-white bg-black/40 backdrop-blur-md px-1.5 py-0.5 rounded uppercase tracking-wider">{listing.residueType}</span>
                     </div>
                   </div>
 
                   <div className="p-4 flex-1 flex flex-col">
-                    <div className="flex items-baseline gap-1.5 mb-1.5">
-                      <span className="text-3xl font-black text-gray-900 tracking-tight">{listing.quantity}</span>
-                      <span className="text-gray-600 font-bold text-[11px] tracking-wide uppercase">Tons</span>
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="text-xl font-black text-zinc-900">{listing.quantity}<span className="text-xs font-semibold text-zinc-500 ml-0.5">T</span></span>
+                      <span className="font-bold text-zinc-900 text-sm">₹{listing.pricePerTon}<span className="text-[10px] font-medium text-zinc-500">/t</span></span>
+                    </div>
+                    <div className="flex items-center gap-1.5 mb-4 text-zinc-500">
+                      <MapPin size={12} className="shrink-0" />
+                      <span className="text-[11px] font-medium truncate">{listing.location?.village || 'Unknown'}, {listing.location?.district || 'Unknown'}</span>
                     </div>
 
-                    <div className="mb-4 min-h-[36px]">
-                      {listing.description ? (
-                        <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed font-medium flex items-start gap-1.5">
-                          <FileText size={12} className="shrink-0 mt-0.5 text-gray-400" />
-                          {listing.description}
-                        </p>
-                      ) : (
-                        <p className="text-xs text-gray-500 italic line-clamp-2 leading-relaxed">No additional details provided.</p>
-                      )}
-                    </div>
-
-                    <div className="space-y-2 mb-4 mt-auto">
-                      <div className="flex items-center justify-between bg-white/60 p-2.5 rounded-lg border border-white/50">
-                        <div className="flex items-center text-[10px] font-bold text-gray-600 uppercase tracking-widest">
-                          <IndianRupee size={12} className="text-blue-600 mr-1.5 shrink-0" /> Price
-                        </div>
-                        <span className="font-bold text-gray-900 text-sm">₹{listing.pricePerTon.toLocaleString()}<span className="text-[10px] text-gray-500 font-bold">/t</span></span>
-                      </div>
-                      
-                      <div className="flex items-center p-2.5 bg-white/60 border border-white/50 rounded-lg">
-                        <MapPin size={12} className="text-gray-500 mr-2 shrink-0" />
-                        <span className="font-medium text-xs text-gray-700 truncate">{listing.location?.village || 'Unknown'}, {listing.location?.district || 'Unknown'}</span>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 pt-3 border-t border-slate-300/50">
-                      {alreadyOffered ? (
-                        <button disabled className="bg-white/40 text-gray-500 font-bold py-2.5 rounded-lg flex items-center justify-center gap-1.5 text-xs cursor-not-allowed border border-slate-300/50">
-                          <CheckCircle2 size={14} /> Offered
-                        </button>
-                      ) : (
-                        <button onClick={() => setOfferingListing(listing)} className="bg-white/80 border border-blue-200/50 hover:bg-blue-50 hover:border-blue-300 text-blue-700 font-bold py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 text-xs active:scale-[0.98] shadow-sm">
-                          <Handshake size={14} /> Negotiate
-                        </button>
-                      )}
-                      <button onClick={() => setBuyingListing(listing)} className="bg-gray-900 hover:bg-gray-800 text-white font-bold py-2 rounded-lg transition-all shadow-md hover:shadow-blue-900/20 flex items-center justify-center gap-1.5 text-xs active:scale-[0.98]">
-                        <ShieldCheck size={14} /> Buy Now
+                    <div className="grid grid-cols-2 gap-2 mt-auto">
+                      <button onClick={() => setOfferingListing(listing)} className="bg-white border border-zinc-200 text-zinc-700 hover:bg-zinc-50 font-bold py-2 rounded-lg transition-colors flex items-center justify-center gap-1 text-[11px]">
+                         Offer
+                      </button>
+                      <button onClick={() => setBuyingListing(listing)} className="bg-zinc-900 hover:bg-zinc-800 text-white font-bold py-2 rounded-lg transition-colors flex items-center justify-center gap-1 text-[11px]">
+                        Buy Now
                       </button>
                     </div>
                   </div>
                 </div>
-              )
-            })}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
+
       </div>
 
-      {/* MODALS */}
+      {/* MODALS (Identical Logic, Refined Styling) */}
       {buyingListing && (
-        <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-          <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-6 max-w-sm w-full shadow-2xl relative border border-white animate-in zoom-in-95 duration-300">
-            <button onClick={() => setBuyingListing(null)} className="absolute top-4 right-4 p-1.5 bg-gray-100 text-gray-400 hover:text-gray-900 rounded-full transition-colors"><X size={16}/></button>
-            <div className="h-10 w-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-4"><ShieldCheck size={20} /></div>
-            <h2 className="text-xl font-bold text-gray-900 mb-1">Secure via Escrow</h2>
-            <p className="text-gray-500 font-medium mb-5 text-xs leading-relaxed">Funds are held securely in escrow and released upon successful OTP verification at pickup.</p>
+        <div className="fixed inset-0 bg-zinc-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-6 max-w-sm w-full shadow-2xl relative animate-in zoom-in-95 duration-200">
+            <button onClick={() => setBuyingListing(null)} className="absolute top-4 right-4 p-1 text-zinc-400 hover:bg-zinc-100 rounded-md transition-colors"><X size={16}/></button>
+            <div className="h-10 w-10 bg-zinc-100 text-zinc-900 rounded-lg flex items-center justify-center mb-3"><ShieldCheck size={20} /></div>
+            <h2 className="text-lg font-bold text-zinc-900 mb-1">Secure via Escrow</h2>
+            <p className="text-zinc-500 text-[11px] mb-5">Funds are held securely and released upon OTP verification at pickup.</p>
             
-            <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 mb-5">
-              <div className="flex justify-between items-center border-b border-gray-200/60 pb-2 mb-2">
-                <span className="text-gray-500 font-bold text-[10px] uppercase tracking-wider">Total Payable</span>
-                <span className="font-black text-xl text-gray-900">₹{(buyingListing.quantity * buyingListing.pricePerTon).toLocaleString()}</span>
+            <div className="bg-zinc-50 p-3 rounded-lg border border-zinc-200 mb-5">
+              <div className="flex justify-between items-center border-b border-zinc-200 pb-2 mb-2">
+                <span className="text-zinc-500 font-bold text-[10px] uppercase">Total Payable</span>
+                <span className="font-black text-lg text-zinc-900">₹{(buyingListing.quantity * buyingListing.pricePerTon).toLocaleString()}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-500 font-bold text-[10px] uppercase tracking-wider">Supplier</span>
-                <span className="font-bold text-blue-700 text-xs flex items-center gap-1"><CheckCircle2 size={12}/> {buyingListing.farmer?.fullName || "Verified"}</span>
+                <span className="text-zinc-500 font-bold text-[10px] uppercase">Supplier</span>
+                <span className="font-bold text-zinc-900 text-[11px] flex items-center gap-1"><CheckCircle2 size={12} className="text-green-500"/> {buyingListing.farmer?.fullName || "Verified"}</span>
               </div>
             </div>
 
-            <div className="mb-6">
-              <label className="block text-[10px] font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Schedule Pickup Date</label>
-              <input type="date" value={pickupDate} onChange={(e) => setPickupDate(e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2.5 font-medium text-sm text-gray-900 outline-none focus:border-blue-500 focus:bg-blue-50/10 transition-all"/>
+            <div className="mb-5">
+              <label className="block text-[11px] font-bold text-zinc-700 mb-1.5">Pickup Date</label>
+              <input type="date" value={pickupDate} onChange={(e) => setPickupDate(e.target.value)} className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 transition-all"/>
             </div>
-            <button onClick={handleBuyNow} className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 shadow-md shadow-blue-600/20 active:scale-[0.98] transition-all text-sm flex items-center justify-center gap-1.5">
-              Pay Securely <ShieldCheck size={16} />
+            <button onClick={handleBuyNow} className="w-full bg-zinc-900 text-white font-bold py-2.5 rounded-lg hover:bg-zinc-800 transition-colors text-xs flex items-center justify-center gap-2">
+              Pay Securely <ShieldCheck size={14} />
             </button>
           </div>
         </div>
       )}
 
       {offeringListing && (
-        <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-          <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-6 max-w-sm w-full shadow-2xl relative border border-white animate-in zoom-in-95 duration-300">
-            <button onClick={() => setOfferingListing(null)} className="absolute top-4 right-4 p-1.5 bg-gray-100 text-gray-400 hover:text-gray-900 rounded-full transition-colors"><X size={16}/></button>
-            <div className="h-10 w-10 bg-gray-100 text-gray-900 rounded-xl flex items-center justify-center mb-4"><Handshake size={20} /></div>
-            <h2 className="text-xl font-bold text-gray-900 mb-1">Negotiate Price</h2>
-            <p className="text-gray-500 font-medium mb-5 text-xs">Farmer's asking price: <span className="font-bold text-gray-900 bg-gray-100 px-1.5 py-0.5 rounded">₹{offeringListing.pricePerTon.toLocaleString()}/t</span></p>
-            <div className="space-y-4 mb-6">
+        <div className="fixed inset-0 bg-zinc-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-6 max-w-sm w-full shadow-2xl relative animate-in zoom-in-95 duration-200">
+            <button onClick={() => setOfferingListing(null)} className="absolute top-4 right-4 p-1 text-zinc-400 hover:bg-zinc-100 rounded-md transition-colors"><X size={16}/></button>
+            <div className="h-10 w-10 bg-zinc-100 text-zinc-900 rounded-lg flex items-center justify-center mb-3"><Handshake size={20} /></div>
+            <h2 className="text-lg font-bold text-zinc-900 mb-1">Negotiate Price</h2>
+            <p className="text-zinc-500 text-[11px] mb-5">Asking price: <span className="font-bold text-zinc-900">₹{offeringListing.pricePerTon.toLocaleString()}/t</span></p>
+            
+            <div className="space-y-3 mb-5">
               <div>
-                <label className="block text-[10px] font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Your Offer (₹/Ton)</label>
+                <label className="block text-[10px] font-bold uppercase text-zinc-500 mb-1">Your Offer (₹/Ton)</label>
                 <div className="relative">
-                  <IndianRupee className="absolute left-3 top-2.5 text-gray-400" size={14} />
-                  <input type="number" value={offerPrice} onChange={(e) => setOfferPrice(e.target.value)} placeholder="0.00" className="w-full border border-gray-200 rounded-lg pl-8 pr-3 py-2 font-bold text-sm text-gray-900 outline-none focus:border-blue-500 focus:bg-blue-50/10 transition-all"/>
+                  <IndianRupee className="absolute left-3 top-2 text-zinc-400" size={14} />
+                  <input type="number" value={offerPrice} onChange={(e) => setOfferPrice(e.target.value)} placeholder="0.00" className="w-full border border-zinc-300 rounded-lg pl-8 pr-3 py-1.5 text-sm font-bold text-zinc-900 outline-none focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 transition-all"/>
                 </div>
               </div>
               <div>
-                <label className="block text-[10px] font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Message (Optional)</label>
-                <textarea value={offerMessage} onChange={(e) => setOfferMessage(e.target.value)} placeholder="E.g., We can pick up tomorrow." className="w-full border border-gray-200 rounded-lg px-3 py-2 font-medium text-sm text-gray-900 outline-none focus:border-blue-500 focus:bg-blue-50/10 h-20 resize-none transition-all"></textarea>
+                <label className="block text-[10px] font-bold uppercase text-zinc-500 mb-1">Message (Optional)</label>
+                <textarea value={offerMessage} onChange={(e) => setOfferMessage(e.target.value)} placeholder="E.g., We can pick up tomorrow." className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 h-16 resize-none transition-all"></textarea>
               </div>
             </div>
-            <button onClick={handleMakeOffer} className="w-full bg-gray-900 text-white font-bold py-3 rounded-lg hover:bg-gray-800 shadow-md active:scale-[0.98] transition-all text-sm">Submit Offer</button>
+            <button onClick={handleMakeOffer} className="w-full bg-zinc-900 text-white font-bold py-2.5 rounded-lg hover:bg-zinc-800 transition-colors text-xs">Submit Offer</button>
           </div>
         </div>
       )}
 
-      {/* FIXED MAP LINK URL SYNTAX */}
       {bookingSuccess && (
-        <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-          <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-6 max-w-sm w-full shadow-2xl text-center border-t-4 border-t-green-500 animate-in zoom-in-95 duration-300">
-            <div className="h-16 w-16 bg-green-50 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner"><ShieldCheck size={32}/></div>
-            <h2 className="text-2xl font-black text-gray-900 mb-2">Escrow Secured!</h2>
-            <p className="text-gray-500 text-xs font-medium mb-6">Present this OTP to the farmer upon arrival to complete the transaction and release funds.</p>
+        <div className="fixed inset-0 bg-zinc-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-6 max-w-sm w-full shadow-2xl text-center animate-in zoom-in-95 duration-200">
+            <div className="h-12 w-12 bg-green-50 text-green-600 rounded-full flex items-center justify-center mx-auto mb-3"><ShieldCheck size={24}/></div>
+            <h2 className="text-xl font-black text-zinc-900 mb-1">Escrow Secured</h2>
+            <p className="text-zinc-500 text-[11px] mb-5">Present this PIN to the farmer upon arrival to complete the transaction.</p>
             
-            <div className="bg-gray-900 text-white py-4 rounded-xl mb-6 shadow-inner border border-gray-800 relative overflow-hidden">
-               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-gray-800 to-transparent opacity-50"></div>
-               <div className="relative z-10 text-4xl font-black tracking-[0.25em]">{bookingSuccess.pickupOTP}</div>
-               <p className="relative z-10 text-gray-400 text-[10px] font-bold uppercase tracking-widest mt-1">Secret Pickup PIN</p>
+            <div className="bg-zinc-50 py-3 rounded-lg border border-zinc-200 mb-5">
+               <div className="text-2xl font-mono font-black tracking-[0.2em] text-zinc-900">{bookingSuccess.pickupOTP}</div>
+               <p className="text-zinc-400 text-[9px] font-bold uppercase tracking-wider mt-0.5">Secret PIN</p>
             </div>
 
-            <div className="text-left bg-gray-50 p-4 rounded-xl border border-gray-100 mb-6">
-              <p className="font-bold text-gray-900 text-sm mb-1 flex items-center gap-1.5"><Phone size={14} className="text-blue-500"/> {bookingSuccess.farmerDetails?.mobile || "Contact unavailable"}</p>
-              <p className="font-medium text-gray-600 text-xs flex items-center gap-1.5"><MapPin size={14} className="text-blue-500"/> {bookingSuccess.farmerDetails?.village || "Location provided privately"}</p>
+            <div className="text-left bg-zinc-50 p-3 rounded-lg border border-zinc-100 mb-5">
+              <p className="font-bold text-zinc-900 text-xs mb-1 flex items-center gap-2"><Phone size={12} className="text-zinc-400"/> {bookingSuccess.farmerDetails?.mobile || "Contact unavailable"}</p>
+              <p className="font-medium text-zinc-600 text-[11px] flex items-center gap-2"><MapPin size={12} className="text-zinc-400"/> {bookingSuccess.farmerDetails?.village || "Location provided privately"}</p>
             </div>
 
             <div className="flex gap-2 w-full">
               {bookingSuccess.farmerDetails?.coordinates && (
-                <a 
-                  href={`https://www.google.com/maps/search/?api=1&query=${bookingSuccess.farmerDetails.coordinates.lat},${bookingSuccess.farmerDetails.coordinates.lng}`} 
-                  target="_blank" rel="noreferrer" 
-                  className="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-2.5 rounded-lg flex items-center justify-center gap-1.5 transition-colors text-sm"
-                >
+                <a href={`https://www.google.com/maps/search/?api=1&query=${bookingSuccess.farmerDetails.coordinates.lat},${bookingSuccess.farmerDetails.coordinates.lng}`} target="_blank" rel="noreferrer" className="flex-1 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-900 font-bold py-2 rounded-lg flex items-center justify-center gap-1.5 transition-colors text-xs">
                   <Map size={14}/> Map
                 </a>
               )}
-              <button onClick={() => setBookingSuccess(null)} className="flex-1 bg-gray-900 text-white font-bold py-2.5 rounded-lg hover:bg-gray-800 transition-colors text-sm">
+              <button onClick={() => setBookingSuccess(null)} className="flex-[2] bg-zinc-900 text-white font-bold py-2 rounded-lg hover:bg-zinc-800 transition-colors text-xs">
                 Done
               </button>
             </div>
