@@ -16,8 +16,33 @@ const PORT: number = process.env.PORT ? parseInt(process.env.PORT, 10) : 5000;
 // Connect to MongoDB
 connectDB();
 
+const allowedOrigins = [
+  process.env.FRONTEND_URL,   // Deployed Vercel React App
+  'http://localhost:5173',    // Local Vite React App
+  'http://localhost:8081',    // Local Expo Web App
+  'http://localhost:19006'    // Legacy Local Expo Web App
+].filter(Boolean);            // Removes undefined if env vars are missing
+
+const corsOptions = {
+  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
+    // Allow requests with no origin (Mobile apps, Postman, server-to-server)
+    if (!origin) {
+      return callback(null, true);
+    }
+    
+    // Allow if the origin is in our array
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+};
 // Middleware (FIXED: Only ONE json parser with 50mb limit)
-app.use(cors());
+app.use(cors(corsOptions));
+app.use(express.json({ limit: '50mb' }));
+
 app.use(express.json({ limit: '50mb' })); 
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
