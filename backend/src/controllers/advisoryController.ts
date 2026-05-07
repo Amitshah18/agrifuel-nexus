@@ -1,9 +1,10 @@
 import { Request, Response } from 'express';
 import axios from 'axios';
 import FormData from 'form-data';
-import { GoogleGenAI } from '@google/genai';
+import Groq from 'groq-sdk';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+// Initialize Groq
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || '' });
 
 export const analyzeCrop = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -12,30 +13,38 @@ export const analyzeCrop = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
-    // Default to Hindi if the user hasn't selected a language yet
     const { latitude, longitude, date, language = 'Hindi' } = req.body;
 
-    // 1. FORWARD IMAGE TO PYTHON AI
+    // ==========================================
+    // 1. FORWARD IMAGE TO PYTHON AI (Hugging Face)
+    // ==========================================
     const formData = new FormData();
     formData.append('file', req.file.buffer, {
-      filename: req.file.originalname,
-      contentType: req.file.mimetype,
+      filename: req.file.originalname || 'upload.jpg',
+      contentType: req.file.mimetype || 'image/jpeg',
     });
 
-    const pythonUrl = process.env.PYTHON_AI_URL || 'http://127.0.0.1:8000/api/predict';
+    // Safely construct the URL (Prevents the 404/500 crash)
+    const AI_BASE_URL = (process.env.PYTHON_AI_URL || 'http://127.0.0.1:8000').replace(/\/$/, '');
+    const pythonUrl = `${AI_BASE_URL}/predict`;
     
     let visionResult;
     try {
-      const pythonResponse = await axios.post(pythonUrl, formData, { headers: { ...formData.getHeaders() } });
+      const pythonResponse = await axios.post(pythonUrl, formData, { 
+        headers: { ...formData.getHeaders() } 
+      });
       visionResult = pythonResponse.data;
     } catch (error: any) {
+      console.error("Python AI Error:", error.message);
       res.status(500).json({ success: false, message: 'Vision AI Service failed or is offline.' });
       return;
     }
 
     const { plant_name, disease_name } = visionResult;
 
-    // 2. DYNAMIC MULTI-LANGUAGE GEMINI PROMPT (Forcing JSON output)
+    // ==========================================
+    // 2. MULTI-LANGUAGE LLM TRANSLATION (Groq + Llama 3)
+    // ==========================================
     const prompt = `
         You are an expert Agricultural AI. 
         I have detected a crop condition. 
@@ -57,44 +66,46 @@ export const analyzeCrop = async (req: Request, res: Response): Promise<void> =>
         }
     `;
 
-    let finalData = { localDiseaseName: disease_name, advisoryText: "" };
+    let finalData = { localDiseaseName: disease_name, advisoryText: "Advisory unavailable." };
     let attempts = 0;
 
     while (attempts < 3) {
       try {
-        const llmResponse = await ai.models.generateContent({
-          model: "gemini-3.1-flash-lite-preview",
-          contents: prompt,
-          config: {
-            // THIS IS THE MAGIC FIX: Forces Gemini to return valid, raw JSON without markdown
-            responseMimeType: "application/json", 
-          }
+        const llmResponse = await groq.chat.completions.create({
+          messages: [{ role: "user", content: prompt }],
+          model: "llama3-8b-8192", // Blazing fast and highly capable
+          temperature: 0.3, // Low temperature for consistent JSON
+          response_format: { type: "json_object" }, // Strictly enforces valid JSON
         });
         
-        // No more regex replace hacks needed, we can parse it directly
-        const parsedResponse = JSON.parse(llmResponse.text || "{}");
+        const responseText = llmResponse.choices[0]?.message?.content || "{}";
+        const parsedResponse = JSON.parse(responseText);
         
         finalData.localDiseaseName = parsedResponse.localDiseaseName || disease_name;
         finalData.advisoryText = parsedResponse.advisoryText || "Advisory unavailable.";
-        break; // Success! Break out of the retry loop.
+        break; 
         
       } catch (error: any) {
         attempts++;
-        console.error(`Gemini Parsing Attempt ${attempts} Failed:`, error);
-        if (attempts >= 3) throw new Error("Gemini AI is busy or failed to parse. Please try again.");
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        console.error(`Groq Parsing Attempt ${attempts} Failed:`, error.message);
+        if (attempts >= 3) {
+            throw new Error("AI is busy or failed to parse. Please try again.");
+        }
       }
     }
 
-    // 3. SEND TO FRONTEND
+    // ==========================================
+    // 3. SEND FINAL DATA TO FRONTEND
+    // ==========================================
     res.status(200).json({
       success: true,
       plant_name,
-      disease_name: finalData.localDiseaseName, // Send the translated name!
+      disease_name: finalData.localDiseaseName, 
       advisory: finalData.advisoryText
     });
 
   } catch (error: any) {
+    console.error("Advisory Generation Error:", error);
     res.status(500).json({ success: false, message: error.message || 'Failed to generate advisory.' });
   }
 };

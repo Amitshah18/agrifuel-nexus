@@ -67,7 +67,7 @@ def prepare_image(image_bytes):
     img_array = tf.keras.preprocessing.image.img_to_array(img) / 255.0
     return np.expand_dims(img_array, axis=0)
 
-@app.post("/api/predict")
+@app.post("/predict")
 async def predict_disease(file: UploadFile = File(...)):
     """Receives an image, runs it through Keras, and returns the labels."""
     if not file.content_type.startswith("image/"):
