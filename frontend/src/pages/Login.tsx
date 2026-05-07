@@ -1,3 +1,4 @@
+import { api } from '@/lib/api';
 import { useState, FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { 
@@ -23,7 +24,7 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/auth/login", {
+      const res = await fetch(`${api.baseURL}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ identifier, password }),
@@ -47,7 +48,7 @@ export default function Login() {
     setError(""); setSuccess(""); setLoading(true);
     
     try {
-      const res = await fetch("/api/auth/forgot-password", {
+      const res = await fetch(`${api.baseURL}/api/auth/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ identifier }),

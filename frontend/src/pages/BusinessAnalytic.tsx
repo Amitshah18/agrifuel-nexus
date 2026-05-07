@@ -1,3 +1,4 @@
+import { api } from '../lib/api';
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, Leaf, IndianRupee, Package, ArrowUpRight, ArrowDownRight, Calendar, Loader2, BarChart3 } from 'lucide-react';
 
@@ -10,7 +11,7 @@ export default function BusinessAnalytics() {
       try {
         const token = localStorage.getItem('af_token');
         // Fetch real order history from the database
-        const res = await fetch('/api/transactions/buyer/orders', {
+        const res = await fetch(`${api.baseURL}/api/transactions/buyer/orders`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await res.json();

@@ -1,3 +1,4 @@
+import { api } from '../lib/api';
 import React, { useState, useEffect } from 'react';
 import { Truck, MapPin, KeyRound, CheckCircle2, Map, Loader2, User, PackageOpen } from 'lucide-react';
 
@@ -9,7 +10,7 @@ export default function BusinessOrders() {
     const fetchOrders = async () => {
       try {
         const token = localStorage.getItem('af_token');
-        const res = await fetch('/api/transactions/buyer/orders', { 
+        const res = await fetch(`${api.baseURL}/api/transactions/buyer/orders`, { 
           headers: { Authorization: `Bearer ${token}` } 
         });
         const data = await res.json();

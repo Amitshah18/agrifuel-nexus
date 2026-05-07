@@ -1,3 +1,4 @@
+import { api } from '../lib/api';
 import React, { useState, useEffect, useMemo } from 'react';
 import { Package, MapPin, IndianRupee, ShieldCheck, Handshake, Search, X, Phone, Map, CheckCircle2, TrendingUp, SlidersHorizontal, Image as ImageIcon, Loader2, Leaf, BarChart3, Clock, AlertCircle } from 'lucide-react';
 
@@ -31,8 +32,8 @@ export default function BusinessDashboard() {
     try {
       const token = localStorage.getItem('af_token');
       const [listRes, offerRes] = await Promise.all([
-        fetch('/api/listings', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('/api/transactions/buyer/offers', { headers: { Authorization: `Bearer ${token}` } })
+        fetch(`${api.baseURL}/api/listings`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${api.baseURL}/api/transactions/buyer/offers`, { headers: { Authorization: `Bearer ${token}` } })
       ]);
       
       const listData = await listRes.json();
@@ -64,7 +65,7 @@ export default function BusinessDashboard() {
 
     try {
       const token = localStorage.getItem('af_token');
-      const res = await fetch('/api/transactions/offer', {
+      const res = await fetch(`${api.baseURL}/api/transactions/offer`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ listingId: tempOffer.listing._id, offeredPricePerTon: tempOffer.offeredPricePerTon, requestedQuantity: tempOffer.listing.quantity, message: tempOffer.message })
       });
@@ -80,7 +81,7 @@ export default function BusinessDashboard() {
     if (!pickupDate) return alert("Select a pickup date");
     try {
       const token = localStorage.getItem('af_token');
-      const res = await fetch('/api/transactions/book', {
+      const res = await fetch(`${api.baseURL}/api/transactions/book`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ listingId: buyingListing._id, pickupDate })
       });
