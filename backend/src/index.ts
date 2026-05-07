@@ -1,5 +1,5 @@
 import express, { Express, Request, Response } from "express";
-import cors from "cors";
+
 import dotenv from "dotenv";
 import connectDB from "./config/db";
 import authRoutes from "./routes/authRoutes";
@@ -7,42 +7,48 @@ import listingRoutes from "./routes/listingRoutes";
 import transactionRoutes from "./routes/transactionRoutes";
 import advisoryRoutes from './routes/advisoryRoutes';
 
-// Load environment variables
 dotenv.config();
-
-// Initialize Express app
 const app: Express = express();
 const PORT: number = process.env.PORT ? parseInt(process.env.PORT, 10) : 5000;
-// Connect to MongoDB
+
 connectDB();
 
+// ==========================================
+// 🚨 MANUAL PREFLIGHT INTERCEPTOR
+// ==========================================
 const allowedOrigins = [
   process.env.FRONTEND_URL?.replace(/\/$/, ''), 
-  'http://localhost:5173',    
-  'http://localhost:8081',    
-  'http://localhost:19006'    
-].filter(Boolean);            
+  'https://agrifuelnexus.vercel.app',           
+  'http://localhost:5173',                      
+  'http://localhost:8081',                      
+];
 
-// 2. Configure CORS logic
-const corsOptions = {
-  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
-    if (!origin) {
-      return callback(null, true);
-    }
-    
-    const cleanOrigin = origin.replace(/\/$/, ''); // Strip trailing slash from incoming request
+app.use((req: Request, res: Response, next: Function) => {
+  const origin = req.headers.origin;
 
-    if (allowedOrigins.indexOf(cleanOrigin) !== -1) {
-      callback(null, true);
-    } else {
-      console.error(`🚨 CORS BLOCKED ORIGIN: ${origin}`); // This will tell us exactly what is failing in the Render logs
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-};
-// Middleware (FIXED: Only ONE json parser with 50mb limit)
-app.use(cors(corsOptions));
+  // 1. Assign Allowed Origin
+  if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else if (!origin) {
+    res.setHeader('Access-Control-Allow-Origin', '*'); 
+  }
+
+  // 2. Assign Required Headers
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  // 3. BRUTE FORCE PREFLIGHT INTERCEPTOR (This stops the 404)
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
+  next();
+});
+// ==========================================
+
+// Middleware
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
@@ -58,6 +64,6 @@ app.get("/api/health", (req: Request, res: Response) => {
 });
 
 // Start Server
-app.listen(PORT,'0.0.0.0', () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server is running in development mode on port ${PORT}`);
 });
