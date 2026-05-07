@@ -31,7 +31,9 @@ export const analyzeCrop = async (req: Request, res: Response): Promise<void> =>
     let visionResult;
     try {
       const pythonResponse = await axios.post(pythonUrl, formData, { 
-        headers: { ...formData.getHeaders() } 
+        headers: { ...formData.getHeaders(),
+        'Content-Length': formData.getLengthSync() 
+      } 
       });
       visionResult = pythonResponse.data;
     } catch (error: any) {
@@ -73,12 +75,18 @@ export const analyzeCrop = async (req: Request, res: Response): Promise<void> =>
       try {
         const llmResponse = await groq.chat.completions.create({
           messages: [{ role: "user", content: prompt }],
-          model: "llama3-8b-8192", // Blazing fast and highly capable
-          temperature: 0.3, // Low temperature for consistent JSON
-          response_format: { type: "json_object" }, // Strictly enforces valid JSON
+          model: "llama3-8b-8192", 
+          temperature: 0.1, // Dropped to 0.1 for maximum rigid formatting
+          response_format: { type: "json_object" }, 
         });
         
-        const responseText = llmResponse.choices[0]?.message?.content || "{}";
+        let responseText = llmResponse.choices[0]?.message?.content || "{}";
+        
+        // ==========================================
+        // THE FIX: Strip sneaky markdown formatting
+        // ==========================================
+        responseText = responseText.replace(/```json/gi, '').replace(/```/g, '').trim();
+        
         const parsedResponse = JSON.parse(responseText);
         
         finalData.localDiseaseName = parsedResponse.localDiseaseName || disease_name;
@@ -89,7 +97,8 @@ export const analyzeCrop = async (req: Request, res: Response): Promise<void> =>
         attempts++;
         console.error(`Groq Parsing Attempt ${attempts} Failed:`, error.message);
         if (attempts >= 3) {
-            throw new Error("AI is busy or failed to parse. Please try again.");
+            // Adding the actual error message here will help us debug if it still fails
+            throw new Error(`AI Translation Failed: ${error.message}`);
         }
       }
     }
