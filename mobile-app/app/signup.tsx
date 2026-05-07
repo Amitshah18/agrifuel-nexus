@@ -1,14 +1,21 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Modal, Image } from 'react-native';
 import { router } from 'expo-router';
-import { ArrowLeft, Leaf, Building2, AlertCircle } from 'lucide-react-native';
+import { ArrowLeft, CheckCircle2, Building2, AlertCircle, Globe, Check, User, MapPin, FileText, ShieldCheck, Leaf } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../src/services/api';
+
+const SUPPORTED_LANGUAGES = ['English', 'Hindi', 'Bengali', 'Marathi', 'Punjabi', 'Haryanvi'];
 
 export default function SignupScreen() {
   const [stage, setStage] = useState<"type" | "wizard">("type");
   const [signupType, setSignupType] = useState<"farmer" | "buyer" | null>(null);
   const [step, setStep] = useState(1);
   const totalSteps = 3;
+
+  const { t, i18n } = useTranslation(); 
+  const [showLangModal, setShowLangModal] = useState(false);
 
   const [formData, setFormData] = useState({
     fullName: "", email: "", mobile: "", businessName: "",
@@ -20,219 +27,240 @@ export default function SignupScreen() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const updateForm = (key: string, value: string) => {
-    setFormData(prev => ({ ...prev, [key]: value }));
+  const changeLanguage = async (lang: string) => {
+    i18n.changeLanguage(lang);
+    await AsyncStorage.setItem('preferredLanguage', lang);
+    setShowLangModal(false);
   };
+
+  const updateForm = (key: string, value: string) => { setFormData(prev => ({ ...prev, [key]: value })); };
 
   const nextStep = () => {
     setError("");
     if (step === 1) {
-      if (!formData.mobile || !formData.email) return setError("Contact details are required.");
-      if (signupType === 'farmer' && !formData.fullName) return setError("Full name is required.");
-      if (signupType === 'buyer' && !formData.businessName) return setError("Business name is required.");
+      if (!formData.mobile || !formData.email) return setError(t('auth.err_contact_req', 'Contact details required.'));
+      if (signupType === 'farmer' && !formData.fullName) return setError(t('auth.err_name_req', 'Full name required.'));
+      if (signupType === 'buyer' && !formData.businessName) return setError(t('auth.err_business_req', 'Business name required.'));
     }
     if (step === 2) {
-      if (signupType === 'farmer' && (!formData.state || !formData.district || !formData.village)) 
-        return setError("Please complete your location details.");
-      if (signupType === 'buyer' && (!formData.companyType || !formData.gstin)) 
-        return setError("Please complete your registration details.");
+      if (signupType === 'farmer' && (!formData.state || !formData.district || !formData.village)) return setError(t('auth.err_location_req', 'Location details required.'));
+      if (signupType === 'buyer' && (!formData.companyType || !formData.gstin)) return setError(t('auth.err_reg_req', 'Registration details required.'));
     }
     setStep(step + 1);
   };
 
   const handleSignup = async () => {
-    if (formData.password !== formData.confirmPassword) {
-      return setError("Passwords do not match!");
-    }
+    if (formData.password !== formData.confirmPassword) return setError(t('auth.err_password_match', 'Passwords do not match.'));
 
     setLoading(true);
     try {
       const payload = {
-        userType: signupType,
-        email: formData.email,
-        mobile: formData.mobile,
-        password: formData.password,
-        fullName: formData.fullName,
-        address: {
-          state: formData.state, district: formData.district, tehsil: formData.tehsil, village: formData.village, pincode: formData.pincode
-        },
-        companyDetails: signupType === 'buyer' ? {
-          businessName: formData.businessName, gstin: formData.gstin, companyType: formData.companyType
-        } : undefined
+        userType: signupType, email: formData.email, mobile: formData.mobile, password: formData.password, fullName: formData.fullName,
+        address: { state: formData.state, district: formData.district, tehsil: formData.tehsil, village: formData.village, pincode: formData.pincode },
+        companyDetails: signupType === 'buyer' ? { businessName: formData.businessName, gstin: formData.gstin, companyType: formData.companyType } : undefined
       };
 
       await api.post('/auth/signup', payload);
       router.replace('/login'); 
     } catch (err: any) {
-      setError(err.response?.data?.message || "Network error. Backend unreachable.");
+      setError(err.response?.data?.message || t('auth.err_network', 'Network error.'));
     } finally {
       setLoading(false);
     }
   };
 
+  const getStepIcon = (stepNum: number) => {
+    if (stepNum === 1) return <User color={step >= 1 ? "white" : "#94a3b8"} size={20} />;
+    if (stepNum === 2) return signupType === 'farmer' ? <MapPin color={step >= 2 ? "white" : "#94a3b8"} size={20} /> : <FileText color={step >= 2 ? "white" : "#94a3b8"} size={20} />;
+    return <ShieldCheck color={step >= 3 ? "white" : "#94a3b8"} size={20} />;
+  };
+
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-gray-50">
-      <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: '#FAFCFF' }}>
+      <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         
-        {/* Header */}
-        <View className="pt-16 pb-6 px-6 bg-white shadow-sm flex-row items-center justify-between z-10 border-b border-gray-100">
+        {/* Minimal Header with App Logo */}
+        <View style={{ paddingTop: 64, paddingBottom: 24, paddingHorizontal: 24, backgroundColor: '#ffffff', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', zIndex: 10, borderBottomWidth: 1, borderBottomColor: '#f1f5f9', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.02, shadowRadius: 5 }}>
           {stage === 'wizard' ? (
-            <TouchableOpacity onPress={() => step > 1 ? setStep(step - 1) : setStage("type")} className="p-2 -ml-2">
-              <ArrowLeft color="#374151" size={24} />
+            <TouchableOpacity onPress={() => step > 1 ? setStep(step - 1) : setStage("type")} style={{ padding: 8, marginLeft: -8 }}>
+              <ArrowLeft color="#0f172a" size={24} />
             </TouchableOpacity>
-          ) : <View className="w-8" />}
-          <Text className="text-xl font-extrabold text-green-700 tracking-tight">AgriFuel Nexus</Text>
-          <View className="w-8" />
+          ) : <View style={{ width: 40 }} />}
+          
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Image source={require('../assets/agrifuel_nexus_logo_no-background.png')} style={{ width: 24, height: 24 }} resizeMode="contain" />
+            <Text style={{ fontSize: 20, fontWeight: '900', color: '#022c22', letterSpacing: -0.5 }}>{t('common.app_name', 'AgriFuel Nexus')}</Text>
+          </View>
+          
+          {/* 👈 LANGUAGE BUTTON */}
+          <TouchableOpacity onPress={() => setShowLangModal(true)} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8fafc', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: '#e2e8f0' }}>
+            <Globe color="#64748b" size={14} />
+            <Text style={{ color: '#475569', fontWeight: '900', fontSize: 10, marginLeft: 6, textTransform: 'uppercase', letterSpacing: 1 }}>{i18n.language ? i18n.language.substring(0, 3) : 'ENG'}</Text>
+          </TouchableOpacity>
         </View>
 
-        <View className="flex-1 px-6 pt-8">
+        <View style={{ flex: 1, paddingHorizontal: 24, paddingTop: 32 }}>
           
-          {/* STAGE 1: ROLE SELECTION */}
+          {/* STAGE 1: Account Type */}
           {stage === "type" && (
-            <View className="flex-1">
-              <Text className="text-3xl font-extrabold text-gray-900 mb-2 tracking-tight">Join the Ecosystem</Text>
-              <Text className="text-gray-500 font-medium text-base mb-8">How would you like to use AgriFuel Nexus?</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 36, fontWeight: '900', color: '#022c22', marginBottom: 8, letterSpacing: -1 }}>{t('auth.join_ecosystem', 'Create Account')}</Text>
+              <Text style={{ color: '#64748b', fontWeight: '600', fontSize: 16, marginBottom: 40 }}>{t('auth.how_to_use', 'Select how you want to use the platform.')}</Text>
 
-              <TouchableOpacity 
-                onPress={() => { setSignupType("farmer"); setStage("wizard"); }}
-                className="bg-white p-6 rounded-3xl border border-gray-200 mb-4 items-center shadow-sm active:border-green-500"
-              >
-                <View className="h-16 w-16 bg-green-50 border border-green-100 rounded-2xl items-center justify-center mb-4">
-                  <Leaf color="#16a34a" size={32} />
+              <TouchableOpacity onPress={() => { setSignupType("farmer"); setStage("wizard"); }} style={{ backgroundColor: '#ffffff', padding: 24, borderRadius: 32, borderWidth: 2, borderColor: '#e2e8f0', marginBottom: 20, alignItems: 'center', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10 }} activeOpacity={0.8}>
+                <View style={{ height: 64, width: 64, backgroundColor: '#ecfdf5', borderWidth: 1, borderColor: '#d1fae5', borderRadius: 24, alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                  <Leaf color="#059669" size={32} />
                 </View>
-                <Text className="text-xl font-extrabold text-gray-900 mb-1">Farmer / FPO</Text>
-                <Text className="text-gray-500 text-center font-medium">Access AI advisory and monetize your crop residue.</Text>
+                <Text style={{ fontSize: 24, fontWeight: '900', color: '#022c22', marginBottom: 4, letterSpacing: -0.5 }}>{t('auth.role_farmer', 'Farmer / FPO')}</Text>
+                <Text style={{ color: '#64748b', textAlign: 'center', fontWeight: '600', fontSize: 14 }}>{t('auth.role_farmer_desc', 'Sell crop residue & access AI advisory.')}</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity 
-                onPress={() => { setSignupType("buyer"); setStage("wizard"); }}
-                className="bg-white p-6 rounded-3xl border border-gray-200 items-center shadow-sm active:border-blue-500"
-              >
-                <View className="h-16 w-16 bg-blue-50 border border-blue-100 rounded-2xl items-center justify-center mb-4">
+              <TouchableOpacity onPress={() => { setSignupType("buyer"); setStage("wizard"); }} style={{ backgroundColor: '#ffffff', padding: 24, borderRadius: 32, borderWidth: 2, borderColor: '#e2e8f0', alignItems: 'center', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10 }} activeOpacity={0.8}>
+                <View style={{ height: 64, width: 64, backgroundColor: '#eff6ff', borderWidth: 1, borderColor: '#dbeafe', borderRadius: 24, alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
                   <Building2 color="#2563eb" size={32} />
                 </View>
-                <Text className="text-xl font-extrabold text-gray-900 mb-1">Corporate Buyer</Text>
-                <Text className="text-gray-500 text-center font-medium">Procure sustainable biomass and biofuel resources.</Text>
+                <Text style={{ fontSize: 24, fontWeight: '900', color: '#022c22', marginBottom: 4, letterSpacing: -0.5 }}>{t('auth.role_buyer', 'Corporate Buyer')}</Text>
+                <Text style={{ color: '#64748b', textAlign: 'center', fontWeight: '600', fontSize: 14 }}>{t('auth.role_buyer_desc', 'Procure sustainable biomass resources.')}</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity onPress={() => router.push('/login')} className="mt-8 py-4">
-                <Text className="text-center font-bold text-gray-600">Already registered? <Text className="text-green-600">Sign in</Text></Text>
+              <TouchableOpacity onPress={() => router.push('/login')} style={{ marginTop: 40, paddingVertical: 16 }}>
+                <Text style={{ textAlign: 'center', fontWeight: '700', color: '#64748b', fontSize: 15 }}>{t('auth.already_registered', 'Already registered?')} <Text style={{ color: '#059669', fontWeight: '900' }}>{t('auth.sign_in', 'Sign in')}</Text></Text>
               </TouchableOpacity>
             </View>
           )}
 
-          {/* STAGE 2: WIZARD */}
+          {/* STAGE 2: Wizard Form */}
           {stage === "wizard" && (
             <View>
-              {/* Stepper */}
-              <View className="flex-row items-center justify-between mb-8 px-2">
+              {/* Custom Progress Bar */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 40, paddingHorizontal: 16, position: 'relative' }}>
+                <View style={{ position: 'absolute', top: 24, left: 32, right: 32, height: 4, backgroundColor: '#e2e8f0', zIndex: -10, borderRadius: 2 }} />
+                <View style={{ position: 'absolute', top: 24, left: 32, height: 4, backgroundColor: '#059669', zIndex: -10, borderRadius: 2, width: `${((step - 1) / 2) * 85}%` }} />
+                
                 {[1, 2, 3].map((s) => (
-                  <View key={s} className="items-center z-10 bg-gray-50">
-                    <View className={`h-10 w-10 rounded-full items-center justify-center ${step >= s ? 'bg-green-600' : 'bg-white border-2 border-gray-200'}`}>
-                      <Text className={step >= s ? 'text-white font-bold' : 'text-gray-400 font-bold'}>{s}</Text>
+                  <View key={s} style={{ alignItems: 'center', zIndex: 10 }}>
+                    <View style={{ height: 48, width: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: step >= s ? '#059669' : '#ffffff', borderWidth: 2, borderColor: step >= s ? '#059669' : '#e2e8f0', elevation: step >= s ? 5 : 0, shadowColor: '#059669', shadowOffset: {width: 0, height: 4}, shadowOpacity: step >= s ? 0.3 : 0, shadowRadius: 10 }}>
+                      {getStepIcon(s)}
                     </View>
                   </View>
                 ))}
-                {/* Connecting Line */}
-                <View className="absolute top-5 left-4 right-4 h-1 bg-gray-200 -z-10" />
               </View>
 
-              {/* Step 1: Identity */}
               {step === 1 && (
-                <View className="space-y-4">
-                  <Text className="text-2xl font-extrabold text-gray-900 mb-4 tracking-tight">Let's start with basics</Text>
+                <View style={{ gap: 20 }}>
+                  <Text style={{ fontSize: 32, fontWeight: '900', color: '#022c22', marginBottom: 8, letterSpacing: -1 }}>{t('auth.start_basics', "Let's start with the basics")}</Text>
                   
-                  <Text className="text-sm font-bold text-gray-700">{signupType === 'farmer' ? 'Full Name *' : 'Business Name *'}</Text>
-                  <TextInput 
-                    className="bg-white border border-gray-200 rounded-xl px-4 h-14 font-medium text-gray-900"
-                    placeholder={signupType === 'farmer' ? "As per Aadhaar" : "Registered Name"}
-                    value={signupType === 'farmer' ? formData.fullName : formData.businessName}
-                    onChangeText={(val) => updateForm(signupType === 'farmer' ? 'fullName' : 'businessName', val)}
-                  />
+                  <View>
+                    <Text style={{ fontSize: 10, fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>{signupType === 'farmer' ? t('auth.full_name_label', 'Full Name *') : t('auth.business_name_label', 'Business Name *')}</Text>
+                    <TextInput style={{ backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 20, paddingHorizontal: 16, height: 60, fontWeight: '700', color: '#0f172a', fontSize: 16, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 5 }} placeholder={signupType === 'farmer' ? t('auth.full_name_placeholder', 'As per Aadhaar') : t('auth.business_name_placeholder', 'Registered Name')} placeholderTextColor="#cbd5e1" value={signupType === 'farmer' ? formData.fullName : formData.businessName} onChangeText={(val) => updateForm(signupType === 'farmer' ? 'fullName' : 'businessName', val)} />
+                  </View>
 
-                  <Text className="text-sm font-bold text-gray-700 mt-2">Mobile Number *</Text>
-                  <TextInput 
-                    className="bg-white border border-gray-200 rounded-xl px-4 h-14 font-medium text-gray-900"
-                    placeholder="10-digit number" keyboardType="phone-pad" maxLength={10}
-                    value={formData.mobile} onChangeText={(val) => updateForm('mobile', val)}
-                  />
+                  <View>
+                    <Text style={{ fontSize: 10, fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>{t('auth.mobile_number_label', 'Mobile Number *')}</Text>
+                    <TextInput style={{ backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 20, paddingHorizontal: 16, height: 60, fontWeight: '700', color: '#0f172a', fontSize: 16, letterSpacing: 2, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 5 }} placeholder="9876543210" placeholderTextColor="#cbd5e1" keyboardType="phone-pad" maxLength={10} value={formData.mobile} onChangeText={(val) => updateForm('mobile', val)} />
+                  </View>
 
-                  <Text className="text-sm font-bold text-gray-700 mt-2">Email Address *</Text>
-                  <TextInput 
-                    className="bg-white border border-gray-200 rounded-xl px-4 h-14 font-medium text-gray-900"
-                    placeholder="name@example.com" keyboardType="email-address" autoCapitalize="none"
-                    value={formData.email} onChangeText={(val) => updateForm('email', val)}
-                  />
+                  <View>
+                    <Text style={{ fontSize: 10, fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>{t('auth.email_address_label', 'Email Address *')}</Text>
+                    <TextInput style={{ backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 20, paddingHorizontal: 16, height: 60, fontWeight: '700', color: '#0f172a', fontSize: 16, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 5 }} placeholder="mail@example.com" placeholderTextColor="#cbd5e1" keyboardType="email-address" autoCapitalize="none" value={formData.email} onChangeText={(val) => updateForm('email', val)} />
+                  </View>
                 </View>
               )}
 
-              {/* Step 2: Details */}
               {step === 2 && (
-                <View className="space-y-4">
-                  <Text className="text-2xl font-extrabold text-gray-900 mb-4 tracking-tight">
-                    {signupType === 'farmer' ? 'Farm Location' : 'Company Details'}
-                  </Text>
+                <View style={{ gap: 20 }}>
+                  <Text style={{ fontSize: 32, fontWeight: '900', color: '#022c22', marginBottom: 8, letterSpacing: -1 }}>{signupType === 'farmer' ? t('auth.farm_location', 'Where is your farm?') : t('auth.company_details', 'Company Details')}</Text>
                   
                   {signupType === 'farmer' ? (
-                    <View> 
-                      <View className="flex-row gap-4">
-                        <View className="flex-1"><Text className="text-sm font-bold text-gray-700 mb-1">State *</Text><TextInput className="bg-white border border-gray-200 rounded-xl px-4 h-14 text-gray-900 font-medium" value={formData.state} onChangeText={(v) => updateForm('state', v)}/></View>
-                        <View className="flex-1"><Text className="text-sm font-bold text-gray-700 mb-1">District *</Text><TextInput className="bg-white border border-gray-200 rounded-xl px-4 h-14 text-gray-900 font-medium" value={formData.district} onChangeText={(v) => updateForm('district', v)}/></View>
+                    <View style={{ gap: 16 }}> 
+                      <View style={{ flexDirection: 'row', gap: 16 }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 10, fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>{t('auth.state_label', 'State *')}</Text>
+                          <TextInput style={{ backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 20, paddingHorizontal: 16, height: 60, fontWeight: '700', color: '#0f172a', fontSize: 16 }} value={formData.state} onChangeText={(v) => updateForm('state', v)}/>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 10, fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>{t('auth.district_label', 'District *')}</Text>
+                          <TextInput style={{ backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 20, paddingHorizontal: 16, height: 60, fontWeight: '700', color: '#0f172a', fontSize: 16 }} value={formData.district} onChangeText={(v) => updateForm('district', v)}/>
+                        </View>
                       </View>
-                      <View className="flex-row gap-4 mt-4">
-                        <View className="flex-1"><Text className="text-sm font-bold text-gray-700 mb-1">Tehsil *</Text><TextInput className="bg-white border border-gray-200 rounded-xl px-4 h-14 text-gray-900 font-medium" value={formData.tehsil} onChangeText={(v) => updateForm('tehsil', v)}/></View>
-                        <View className="flex-1"><Text className="text-sm font-bold text-gray-700 mb-1">PIN *</Text><TextInput className="bg-white border border-gray-200 rounded-xl px-4 h-14 text-gray-900 font-medium" keyboardType="number-pad" maxLength={6} value={formData.pincode} onChangeText={(v) => updateForm('pincode', v)}/></View>
+                      <View style={{ flexDirection: 'row', gap: 16 }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 10, fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>{t('auth.tehsil_label', 'Tehsil *')}</Text>
+                          <TextInput style={{ backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 20, paddingHorizontal: 16, height: 60, fontWeight: '700', color: '#0f172a', fontSize: 16 }} value={formData.tehsil} onChangeText={(v) => updateForm('tehsil', v)}/>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 10, fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>{t('auth.pin_label', 'PIN Code *')}</Text>
+                          <TextInput style={{ backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 20, paddingHorizontal: 16, height: 60, fontWeight: '700', color: '#0f172a', fontSize: 16, letterSpacing: 2 }} keyboardType="number-pad" maxLength={6} value={formData.pincode} onChangeText={(v) => updateForm('pincode', v)}/>
+                        </View>
                       </View>
-                      <View className="mt-4">
-                        <Text className="text-sm font-bold text-gray-700 mb-1">Village / Gram Panchayat *</Text>
-                        <TextInput className="bg-white border border-gray-200 rounded-xl px-4 h-14 font-medium text-gray-900" value={formData.village} onChangeText={(v) => updateForm('village', v)}/>
+                      <View>
+                        <Text style={{ fontSize: 10, fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>{t('auth.village_label', 'Village / Panchayat *')}</Text>
+                        <TextInput style={{ backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 20, paddingHorizontal: 16, height: 60, fontWeight: '700', color: '#0f172a', fontSize: 16 }} value={formData.village} onChangeText={(v) => updateForm('village', v)}/>
                       </View>
                     </View>
                   ) : (
-                    <View>
-                      <Text className="text-sm font-bold text-gray-700 mb-1">Industry Type *</Text>
-                      <TextInput className="bg-white border border-gray-200 rounded-xl px-4 h-14 font-medium text-gray-900 mb-4" placeholder="e.g. Biofuel Refinery" value={formData.companyType} onChangeText={(v) => updateForm('companyType', v)}/>
-                      
-                      <Text className="text-sm font-bold text-gray-700 mb-1">GSTIN Number *</Text>
-                      <TextInput className="bg-white border border-gray-200 rounded-xl px-4 h-14 font-medium text-gray-900 uppercase" placeholder="22AAAAA0000A1Z5" maxLength={15} autoCapitalize="characters" value={formData.gstin} onChangeText={(v) => updateForm('gstin', v)}/>
+                    <View style={{ gap: 20 }}>
+                      <View>
+                        <Text style={{ fontSize: 10, fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>{t('auth.industry_type_label', 'Industry Sector *')}</Text>
+                        <TextInput style={{ backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 20, paddingHorizontal: 16, height: 60, fontWeight: '700', color: '#0f172a', fontSize: 16 }} placeholder="e.g. Biofuel Refinery" placeholderTextColor="#cbd5e1" value={formData.companyType} onChangeText={(v) => updateForm('companyType', v)}/>
+                      </View>
+                      <View>
+                        <Text style={{ fontSize: 10, fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>{t('auth.gstin_label', 'GSTIN Number *')}</Text>
+                        <TextInput style={{ backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 20, paddingHorizontal: 16, height: 60, fontWeight: '700', color: '#0f172a', fontSize: 16, textTransform: 'uppercase', letterSpacing: 1 }} placeholder="22AAAAA0000A1Z5" placeholderTextColor="#cbd5e1" maxLength={15} autoCapitalize="characters" value={formData.gstin} onChangeText={(v) => updateForm('gstin', v)}/>
+                      </View>
                     </View>
                   )}
                 </View>
               )}
 
-              {/* Step 3: Security */}
               {step === 3 && (
-                <View className="space-y-4">
-                  <Text className="text-2xl font-extrabold text-gray-900 mb-4 tracking-tight">Secure Account</Text>
+                <View style={{ gap: 20 }}>
+                  <Text style={{ fontSize: 32, fontWeight: '900', color: '#022c22', marginBottom: 8, letterSpacing: -1 }}>{t('auth.secure_account', 'Secure your account')}</Text>
                   
-                  <Text className="text-sm font-bold text-gray-700">Password *</Text>
-                  <TextInput className="bg-white border border-gray-200 rounded-xl px-4 h-14 text-gray-900 font-medium" secureTextEntry value={formData.password} onChangeText={(v) => updateForm('password', v)}/>
+                  <View>
+                    <Text style={{ fontSize: 10, fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>{t('auth.password_label', 'Create Password *')}</Text>
+                    <TextInput style={{ backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 20, paddingHorizontal: 16, height: 60, fontWeight: '700', color: '#0f172a', fontSize: 16 }} secureTextEntry value={formData.password} onChangeText={(v) => updateForm('password', v)}/>
+                  </View>
                   
-                  <Text className="text-sm font-bold text-gray-700 mt-2">Confirm Password *</Text>
-                  <TextInput className="bg-white border border-gray-200 rounded-xl px-4 h-14 text-gray-900 font-medium" secureTextEntry value={formData.confirmPassword} onChangeText={(v) => updateForm('confirmPassword', v)}/>
+                  <View>
+                    <Text style={{ fontSize: 10, fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>{t('auth.confirm_password_label', 'Confirm Password *')}</Text>
+                    <TextInput style={{ backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 20, paddingHorizontal: 16, height: 60, fontWeight: '700', color: '#0f172a', fontSize: 16 }} secureTextEntry value={formData.confirmPassword} onChangeText={(v) => updateForm('confirmPassword', v)}/>
+                  </View>
                 </View>
               )}
 
               {error ? (
-                <View className="bg-red-50 p-3 rounded-xl flex-row items-center mt-6 border border-red-100">
-                  <AlertCircle color="#dc2626" size={18} />
-                  <Text className="text-red-700 font-medium ml-2 text-sm flex-1">{error}</Text>
+                <View style={{ backgroundColor: '#fef2f2', padding: 16, borderRadius: 20, flexDirection: 'row', alignItems: 'center', marginTop: 24, borderWidth: 1, borderColor: '#fee2e2' }}>
+                  <AlertCircle color="#dc2626" size={20} />
+                  <Text style={{ color: '#b91c1c', fontWeight: '800', marginLeft: 12, fontSize: 14, flex: 1 }}>{error}</Text>
                 </View>
               ) : null}
 
-              <TouchableOpacity 
-                onPress={step === totalSteps ? handleSignup : nextStep}
-                disabled={loading}
-                className={`h-14 rounded-xl items-center justify-center mt-6 ${loading ? 'bg-gray-400' : 'bg-gray-900'}`}
-              >
-                <Text className="text-white font-bold text-lg">
-                  {step === totalSteps ? (loading ? 'Creating...' : 'Create Account') : 'Continue'}
-                </Text>
+              <TouchableOpacity onPress={step === totalSteps ? handleSignup : nextStep} disabled={loading} style={{ backgroundColor: loading ? '#cbd5e1' : '#022c22', height: 60, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginTop: 32, elevation: 5, shadowColor: '#064e3b', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 15 }}>
+                <Text style={{ color: '#ffffff', fontWeight: '900', fontSize: 18 }}>{step === totalSteps ? (loading ? t('auth.creating', 'Setting up...') : t('auth.create_account', 'Complete Registration')) : t('auth.continue', 'Continue to Next Step')}</Text>
               </TouchableOpacity>
             </View>
           )}
         </View>
       </ScrollView>
+
+      {/* LANGUAGE MODAL */}
+      <Modal visible={showLangModal} animationType="slide" transparent={true}>
+        <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <View style={{ backgroundColor: 'white', borderTopLeftRadius: 40, borderTopRightRadius: 40, padding: 32, paddingBottom: Platform.OS === 'ios' ? 48 : 32 }}>
+            <Text style={{ fontSize: 24, fontWeight: '900', marginBottom: 24, color: '#022c22' }}>{t('profile.select_language', 'Select Language')}</Text>
+            {SUPPORTED_LANGUAGES.map((lang) => (
+              <TouchableOpacity key={lang} onPress={() => changeLanguage(lang)} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 20, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
+                <Text style={{ fontSize: 18, fontWeight: i18n.language === lang ? '900' : '600', color: i18n.language === lang ? '#059669' : '#334155' }}>{lang}</Text>
+                {i18n.language === lang && <Check color="#059669" size={24} />}
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity onPress={() => setShowLangModal(false)} style={{ marginTop: 32, alignItems: 'center', backgroundColor: '#f8fafc', padding: 16, borderRadius: 20 }}>
+              <Text style={{ fontSize: 14, fontWeight: '900', color: '#64748b', textTransform: 'uppercase', letterSpacing: 1 }}>{t('common.cancel', 'Cancel')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }

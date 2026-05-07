@@ -1,19 +1,17 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator, Image, Linking } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { KeyRound, Truck, CheckCircle2, AlertTriangle, Bell, Plus, History, TrendingUp, MessageSquare, Image as ImageIcon, Package, X, Phone, Map as MapIcon } from 'lucide-react-native';
+import { Plus } from 'lucide-react-native';
 import { useFocusEffect } from 'expo-router';
 import * as Location from 'expo-location';
-import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTranslation } from 'react-i18next';
 import api from '../../src/services/api';
 
 export default function FarmerListingsScreen() {
   const [orders, setOrders] = useState<any[]>([]);
   const [unbookedListings, setUnbookedListings] = useState<any[]>([]);
   const [offers, setOffers] = useState<any[]>([]);
-  const [benchmark, setBenchmark] = useState<any>(null);
-  
   const [loading, setLoading] = useState(true);
   const [otpInput, setOtpInput] = useState<{ [key: string]: string }>({});
 
@@ -23,28 +21,17 @@ export default function FarmerListingsScreen() {
   const [customResidue, setCustomResidue] = useState('');
   const [quantity, setQuantity] = useState('');
   const [pricePerTon, setPricePerTon] = useState('');
-  const [description, setDescription] = useState('');
-  const [images, setImages] = useState<string[]>([]);
 
-  const residueOptions = ['Rice Husk', 'Wheat Straw', 'Sugarcane Bagasse', 'Corn Stover', 'Other'];
+  const { t } = useTranslation();
+
+  const residueOptions = [
+    { value: 'Rice Husk', label: t('market.rice_husk', 'Rice Husk') },
+    { value: 'Wheat Straw', label: t('market.wheat_straw', 'Wheat Straw') },
+    { value: 'Sugarcane Bagasse', label: t('market.sugarcane_bagasse', 'Sugarcane Bagasse') },
+    { value: 'Other', label: t('market.other', 'Other') }
+  ];
 
   useFocusEffect(useCallback(() => { fetchData(); }, []));
-
-  useEffect(() => {
-    const fetchBenchmark = async () => {
-      const typeToCheck = residueType === 'Other' ? customResidue : residueType;
-      if (typeToCheck && residueType !== 'Other') {
-        try {
-          const userStr = await AsyncStorage.getItem('af_user');
-          const state = JSON.parse(userStr || '{}').address?.state || "Maharashtra";
-          const res = await api.get(`/listings/benchmark?residueType=${typeToCheck}&state=${state}`);
-          if (res.data && res.data.avgPrice > 0) setBenchmark(res.data);
-          else setBenchmark(null);
-        } catch (error) { setBenchmark(null); }
-      } else { setBenchmark(null); }
-    };
-    fetchBenchmark();
-  }, [residueType, customResidue]);
 
   const fetchData = async () => {
     try {
@@ -63,276 +50,144 @@ export default function FarmerListingsScreen() {
     } catch (error) { console.error(error); } finally { setLoading(false); }
   };
 
-  const pickImage = async () => {
-    if (images.length >= 2) return Alert.alert("Limit Reached", "Max 2 photos allowed.");
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsMultipleSelection: true,
-      selectionLimit: 2 - images.length,
-      base64: true, 
-      quality: 0.5,
-    });
-
-    if (!result.canceled && result.assets) {
-      const newImages = result.assets.map(a => `data:image/jpeg;base64,${a.base64}`);
-      setImages([...images, ...newImages].slice(0, 2));
-    }
-  };
-
-  const removeImage = (indexToRemove: number) => { setImages(images.filter((_, index) => index !== indexToRemove)); };
-
   const handleCreateListing = async () => {
     const finalResidueType = residueType === 'Other' ? customResidue : residueType;
-    if (!finalResidueType || !quantity || !pricePerTon) return Alert.alert("Error", "Fill all required fields");
+    if (!finalResidueType || !quantity || !pricePerTon) return Alert.alert(t('common.error', 'Error'), "Fill required fields");
     
     setIsLocating(true);
     let { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') {
-      setIsLocating(false);
-      return Alert.alert('Permission Denied', 'Allow location access to post.');
-    }
+    if (status !== 'granted') { setIsLocating(false); return Alert.alert(t('common.error', 'Error'), "Permission denied"); }
 
     try {
       let location = await Location.getCurrentPositionAsync({});
       await api.post('/listings', { 
         residueType: finalResidueType, quantity: Number(quantity), pricePerTon: Number(pricePerTon),
-        description, images, coordinates: { lat: location.coords.latitude, lng: location.coords.longitude }
+        coordinates: { lat: location.coords.latitude, lng: location.coords.longitude }
       });
       setShowForm(false);
-      setResidueType(''); setCustomResidue(''); setQuantity(''); setPricePerTon(''); setDescription(''); setImages([]);
-      Alert.alert("Success", "Listing published successfully!");
+      setResidueType(''); setCustomResidue(''); setQuantity(''); setPricePerTon(''); 
+      Alert.alert(t('common.success', 'Success'), "Listing created");
       fetchData();
-    } catch (error) { Alert.alert("Error", "Could not create listing"); } finally { setIsLocating(false); }
+    } catch (error) { Alert.alert(t('common.error', 'Error'), "Could not create listing"); } finally { setIsLocating(false); }
   };
 
   const handleOfferAction = async (offerId: string, action: 'accept' | 'reject') => {
     try {
       await api.put(`/transactions/offers/${offerId}/${action}`);
-      Alert.alert("Success", `Offer ${action}ed.`); fetchData();
-    } catch (error) { Alert.alert("Error", "Failed to process offer."); }
+      Alert.alert(t('common.success', 'Success'), action === 'accept' ? 'Offer Accepted' : 'Offer Rejected'); 
+      fetchData();
+    } catch (error) { Alert.alert(t('common.error', 'Error'), "Failed to process offer."); }
   };
 
   const handleVerifyOTP = async (orderId: string) => {
     const submittedOtp = otpInput[orderId];
-    if (!submittedOtp || submittedOtp.length !== 6) return Alert.alert("Error", "Enter 6-digit OTP");
+    if (!submittedOtp || submittedOtp.length !== 6) return Alert.alert(t('common.error', 'Error'), "Enter 6-digit OTP");
     try {
       await api.post('/transactions/verify-otp', { orderId, submittedOtp });
-      Alert.alert("Success! 🎉", "Funds have been released to your account.");
+      Alert.alert(t('common.success', 'Success'), "Funds Released!");
       setOtpInput({...otpInput, [orderId]: ''}); fetchData();
     } catch (error: any) { Alert.alert("Failed", error.response?.data?.message || "Invalid OTP"); }
   };
 
-  if (loading) return <View style={{ flex: 1, backgroundColor: '#f9fafb', alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator size="large" color="#16a34a" /></View>;
+  if (loading) return <View style={{ flex: 1, backgroundColor: '#FAFCFF', alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator size="large" color="#059669" /></View>;
 
   const pendingPickups = orders.filter(o => o.status === 'funds_in_escrow');
-  const completedPickups = orders.filter(o => o.status === 'completed');
   const pendingOffers = offers.filter(o => o.status === 'pending');
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#f9fafb' }} edges={['top']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFCFF' }} edges={['top']}>
       
-      <View style={{ paddingHorizontal: 24, paddingVertical: 16, backgroundColor: '#ffffff', borderBottomWidth: 1, borderBottomColor: '#f3f4f6', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Text style={{ fontSize: 24, fontWeight: '900', color: '#111827' }}>My Listings</Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <TouchableOpacity style={{ padding: 8, position: 'relative' }}>
-            <Bell color="#4b5563" size={24} />
-            {pendingPickups.length > 0 ? <View style={{ position: 'absolute', top: 4, right: 8, height: 12, width: 12, backgroundColor: '#ef4444', borderRadius: 6, borderWidth: 2, borderColor: '#ffffff' }} /> : null}
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setShowForm(!showForm)} style={{ height: 40, width: 40, backgroundColor: '#f0fdf4', borderRadius: 20, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#dcfce7' }}>
-            <Plus color="#16a34a" size={24} />
-          </TouchableOpacity>
-        </View>
+      <View style={{ paddingHorizontal: 24, paddingVertical: 16, backgroundColor: '#ffffff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Text style={{ fontSize: 26, fontWeight: '900', color: '#022c22', letterSpacing: -0.5 }}>{t('market.my_listings', 'Marketplace')}</Text>
+        <TouchableOpacity onPress={() => setShowForm(!showForm)} style={{ height: 44, width: 44, backgroundColor: '#022c22', borderRadius: 16, alignItems: 'center', justifyContent: 'center', elevation: 4 }}>
+          <Plus color="#ffffff" size={24} />
+        </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
+      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
         
-        {showForm ? (
-          <View style={{ backgroundColor: '#ffffff', padding: 24, borderRadius: 24, borderWidth: 1, borderColor: '#e5e7eb', marginBottom: 24 }}>
-            <Text style={{ fontWeight: '900', fontSize: 20, color: '#111827', marginBottom: 20 }}>Create New Listing</Text>
+        {showForm && (
+          <View style={{ backgroundColor: '#ffffff', padding: 24, borderRadius: 32, borderWidth: 1, borderColor: '#f1f5f9', marginBottom: 24, elevation: 3 }}>
+            <Text style={{ fontWeight: '900', fontSize: 22, color: '#022c22', marginBottom: 20 }}>{t('market.create_new_listing', 'Post New Listing')}</Text>
             
-            <Text style={{ fontSize: 12, fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', marginBottom: 8 }}>Residue Type *</Text>
+            <Text style={{ fontSize: 10, fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: 8, letterSpacing: 1 }}>{t('market.residue_type', 'Biomass Type')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16, flexDirection: 'row' }}>
-              {residueOptions.map(type => (
-                <TouchableOpacity key={type} onPress={() => { setResidueType(type); setCustomResidue(''); }} style={{ marginRight: 8, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, borderWidth: 1, backgroundColor: residueType === type ? '#111827' : '#f9fafb', borderColor: residueType === type ? '#111827' : '#e5e7eb' }}>
-                  <Text style={{ fontWeight: '700', color: residueType === type ? '#ffffff' : '#4b5563' }}>{type}</Text>
+              {residueOptions.map(opt => (
+                <TouchableOpacity key={opt.value} onPress={() => { setResidueType(opt.value); setCustomResidue(''); }} style={{ marginRight: 8, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 16, borderWidth: 1, backgroundColor: residueType === opt.value ? '#059669' : '#f8fafc', borderColor: residueType === opt.value ? '#059669' : '#e2e8f0' }}>
+                  <Text style={{ fontWeight: '800', color: residueType === opt.value ? '#ffffff' : '#334155' }}>{opt.label}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
 
-            {residueType === 'Other' ? (
-              <TextInput style={{ backgroundColor: '#f0fdf4', borderWidth: 1, borderColor: '#bbf7d0', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, fontWeight: '700', color: '#111827', fontSize: 16, marginBottom: 20 }} placeholder="Specify crop waste..." value={customResidue} onChangeText={setCustomResidue} />
-            ) : null}
-
-            <View style={{ flexDirection: 'row', gap: 12, marginBottom: 20 }}>
+            <View style={{ flexDirection: 'row', gap: 12, marginBottom: 24 }}>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 12, fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', marginBottom: 8 }}>Quantity (Tons) *</Text>
-                <TextInput style={{ backgroundColor: '#f9fafb', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, fontWeight: '700', color: '#111827', fontSize: 16 }} placeholder="e.g. 5.5" keyboardType="numeric" value={quantity} onChangeText={setQuantity} />
+                <Text style={{ fontSize: 10, fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: 8, letterSpacing: 1 }}>{t('market.quantity_tons', 'Quantity (Tons)')}</Text>
+                <TextInput style={{ backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 16, fontWeight: '800', color: '#0f172a', fontSize: 16 }} placeholder={t('market.qty_placeholder', "e.g. 10")} keyboardType="numeric" value={quantity} onChangeText={setQuantity} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 12, fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', marginBottom: 8 }}>Price (₹/Ton) *</Text>
-                <TextInput style={{ backgroundColor: '#f9fafb', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, fontWeight: '700', color: '#111827', fontSize: 16 }} placeholder="0.00" keyboardType="numeric" value={pricePerTon} onChangeText={setPricePerTon} />
+                <Text style={{ fontSize: 10, fontWeight: '800', color: '#64748b', textTransform: 'uppercase', marginBottom: 8, letterSpacing: 1 }}>{t('market.price_per_ton', 'Price/Ton (₹)')}</Text>
+                <TextInput style={{ backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 16, fontWeight: '800', color: '#0f172a', fontSize: 16 }} placeholder={t('market.price_placeholder', "e.g. 3200")} keyboardType="numeric" value={pricePerTon} onChangeText={setPricePerTon} />
               </View>
             </View>
 
-            {(benchmark && residueType !== 'Other') ? (
-              <View style={{ backgroundColor: '#f0fdf4', borderWidth: 1, borderColor: '#dcfce7', padding: 12, borderRadius: 12, flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 20 }}>
-                <TrendingUp color="#16a34a" size={16} />
-                <Text style={{ fontSize: 12, fontWeight: '700', color: '#166534' }}>State Average: ₹{benchmark.avgPrice.toFixed(0)}/t</Text>
-              </View>
-            ) : null}
-
-            <Text style={{ fontSize: 12, fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', marginBottom: 8 }}>Add Photos (Max 2)</Text>
-            <View style={{ flexDirection: 'row', gap: 12, marginBottom: 20 }}>
-              {images.length < 2 ? (
-                <TouchableOpacity onPress={pickImage} style={{ borderWidth: 2, borderStyle: 'dashed', borderColor: '#d1d5db', borderRadius: 12, height: 80, width: 80, backgroundColor: '#f9fafb', alignItems: 'center', justifyContent: 'center' }}>
-                  <ImageIcon color="#9ca3af" size={20} style={{ marginBottom: 4 }} />
-                  <Text style={{ fontSize: 10, fontWeight: '700', color: '#9ca3af' }}>Upload</Text>
-                </TouchableOpacity>
-              ) : null}
-              {images.map((img, idx) => (
-                <View key={idx} style={{ height: 80, width: 80, borderRadius: 12, borderWidth: 1, borderColor: '#e5e7eb', overflow: 'hidden' }}>
-                  <Image source={{ uri: img }} style={{ width: '100%', height: '100%' }} />
-                  <TouchableOpacity onPress={() => removeImage(idx)} style={{ position: 'absolute', top: 4, right: 4, backgroundColor: '#ef4444', borderRadius: 12, padding: 4 }}><X color="white" size={10} /></TouchableOpacity>
-                </View>
-              ))}
-            </View>
-
-            <Text style={{ fontSize: 12, fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', marginBottom: 8 }}>Description (Optional)</Text>
-            <TextInput style={{ backgroundColor: '#f9fafb', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, fontWeight: '500', color: '#111827', height: 96, fontSize: 16, marginBottom: 24 }} placeholder="Condition, access..." multiline textAlignVertical="top" value={description} onChangeText={setDescription} />
-            
-            <TouchableOpacity onPress={handleCreateListing} disabled={isLocating} style={{ backgroundColor: '#111827', paddingVertical: 16, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ color: '#ffffff', fontWeight: '700', fontSize: 16 }}>{isLocating ? "Processing..." : "Post Listing"}</Text>
+            <TouchableOpacity onPress={handleCreateListing} disabled={isLocating} style={{ backgroundColor: '#022c22', paddingVertical: 20, borderRadius: 20, alignItems: 'center', justifyContent: 'center', elevation: 4 }}>
+              <Text style={{ color: '#ffffff', fontWeight: '900', fontSize: 16 }}>{isLocating ? t('common.processing', 'Processing...') : t('market.post_listing', 'Post to Marketplace')}</Text>
             </TouchableOpacity>
           </View>
-        ) : null}
+        )}
 
-        {/* ZONE 1: OFFERS INBOX */}
-        {pendingOffers.length > 0 ? (
+        {pendingOffers.length > 0 && (
           <View style={{ marginBottom: 32 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-              <MessageSquare size={14} color="#2563eb" style={{ marginRight: 6 }}/>
-              <Text style={{ fontSize: 14, fontWeight: '700', color: '#2563eb', textTransform: 'uppercase', letterSpacing: 0.5 }}>Incoming Offers</Text>
-            </View>
-            
-            {pendingOffers.map(offer => {
-              const diff = offer.offeredPricePerTon - (offer.listing?.pricePerTon || 0);
-              const isHigher = diff >= 0;
-
-              return (
-                <View key={offer._id} style={{ backgroundColor: '#ffffff', borderRadius: 24, borderWidth: 1, borderColor: '#e5e7eb', padding: 20, marginBottom: 16, overflow: 'hidden' }}>
-                  <View style={{ position: 'absolute', top: 0, left: 0, width: 6, height: '200%', backgroundColor: isHigher ? '#22c55e' : '#ef4444' }}></View>
-                  
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12, paddingLeft: 8 }}>
-                    <Text style={{ fontWeight: '700', color: '#111827', fontSize: 16 }}>{offer.company?.companyDetails?.businessName || 'Buyer'}</Text>
-                    <View style={{ backgroundColor: '#f3f4f6', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 }}>
-                      <Text style={{ fontSize: 10, fontWeight: '700', color: '#4b5563', textTransform: 'uppercase' }}>Wants {offer.requestedQuantity}T</Text>
-                    </View>
-                  </View>
-
-                  <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 12, marginBottom: 12, paddingLeft: 8 }}>
-                    <Text style={{ fontSize: 30, fontWeight: '900', color: '#111827' }}>₹{offer.offeredPricePerTon}</Text>
-                    <Text style={{ fontSize: 12, fontWeight: '700', marginBottom: 4, color: isHigher ? '#16a34a' : '#dc2626' }}>
-                      {isHigher ? '+' : ''}{diff} vs asking
-                    </Text>
-                  </View>
-
-                  {offer.message ? <Text style={{ fontSize: 14, color: '#6b7280', fontStyle: 'italic', marginBottom: 20, paddingLeft: 8 }}>"{offer.message}"</Text> : null}
-
-                  <View style={{ flexDirection: 'row', gap: 12, paddingLeft: 8 }}>
-                    <TouchableOpacity onPress={() => handleOfferAction(offer._id, 'reject')} style={{ flex: 1, backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#d1d5db', paddingVertical: 12, borderRadius: 12, alignItems: 'center' }}>
-                      <Text style={{ color: '#374151', fontWeight: '700' }}>Reject</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => handleOfferAction(offer._id, 'accept')} style={{ flex: 1, backgroundColor: '#16a34a', paddingVertical: 12, borderRadius: 12, alignItems: 'center' }}>
-                      <Text style={{ color: '#ffffff', fontWeight: '700' }}>Accept Offer</Text>
-                    </TouchableOpacity>
+            <Text style={{ fontSize: 12, fontWeight: '900', color: '#2563eb', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 16 }}>{t('market.incoming_offers', 'Incoming Offers')}</Text>
+            {pendingOffers.map(offer => (
+              <View key={offer._id} style={{ backgroundColor: '#ffffff', borderRadius: 32, borderWidth: 1, borderColor: '#e2e8f0', padding: 24, marginBottom: 16, elevation: 2 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                  <Text style={{ fontWeight: '900', color: '#0f172a', fontSize: 18 }}>{offer.company?.companyDetails?.businessName}</Text>
+                  <View style={{ backgroundColor: '#f1f5f9', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 }}>
+                    <Text style={{ fontSize: 10, fontWeight: '800', color: '#475569', textTransform: 'uppercase' }}>{t('market.wants', 'Wants')} {offer.requestedQuantity}T</Text>
                   </View>
                 </View>
-              )
-            })}
+                <Text style={{ fontSize: 36, fontWeight: '900', color: '#059669', marginVertical: 12, letterSpacing: -1 }}>₹{offer.offeredPricePerTon}</Text>
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                  <TouchableOpacity onPress={() => handleOfferAction(offer._id, 'reject')} style={{ flex: 1, backgroundColor: '#f1f5f9', paddingVertical: 16, borderRadius: 16, alignItems: 'center' }}>
+                    <Text style={{ color: '#64748b', fontWeight: '800' }}>{t('market.reject', 'Reject')}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => handleOfferAction(offer._id, 'accept')} style={{ flex: 1, backgroundColor: '#059669', paddingVertical: 16, borderRadius: 16, alignItems: 'center', elevation: 3 }}>
+                    <Text style={{ color: '#ffffff', fontWeight: '800' }}>{t('market.accept_offer', 'Accept')}</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))}
           </View>
-        ) : null}
+        )}
 
-        {/* ZONE 2: OTP ACTION REQUIRED */}
-        {pendingPickups.length > 0 ? (
+        {pendingPickups.length > 0 && (
           <View style={{ marginBottom: 32 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-              <AlertTriangle size={14} color="#ea580c" style={{ marginRight: 6 }}/>
-              <Text style={{ fontSize: 14, fontWeight: '700', color: '#ea580c', textTransform: 'uppercase', letterSpacing: 0.5 }}>Action Required</Text>
-            </View>
-            
+            <Text style={{ fontSize: 12, fontWeight: '900', color: '#ea580c', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 16 }}>{t('market.action_required', 'Action Required')}</Text>
             {pendingPickups.map(order => (
-              <View key={order._id} style={{ backgroundColor: '#ffffff', borderRadius: 24, borderWidth: 2, borderColor: '#fdba74', marginBottom: 16, overflow: 'hidden' }}>
-                <View style={{ backgroundColor: '#fff7ed', padding: 16, borderBottomWidth: 1, borderBottomColor: '#ffedd5', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}><Truck size={18} color="#ea580c" style={{ marginRight: 6 }}/><Text style={{ fontWeight: '900', color: '#7c2d12' }}>Truck Arriving</Text></View>
-                  <Text style={{ fontWeight: '900', color: '#16a34a', fontSize: 18 }}>₹{order.totalAmount?.toLocaleString()}</Text>
+              <View key={order._id} style={{ backgroundColor: '#ffffff', borderRadius: 32, borderWidth: 2, borderColor: '#fdba74', padding: 24, marginBottom: 16, elevation: 4 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                  <View style={{ backgroundColor: '#fff7ed', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 }}><Text style={{ fontWeight: '900', color: '#ea580c', fontSize: 10, textTransform: 'uppercase', letterSpacing: 1 }}>{t('market.truck_arriving', 'Truck Arriving')}</Text></View>
+                  <Text style={{ fontWeight: '900', color: '#059669', fontSize: 20 }}>₹{order.totalAmount?.toLocaleString()}</Text>
                 </View>
+                <Text style={{ fontSize: 24, fontWeight: '900', color: '#0f172a', marginBottom: 4, letterSpacing: -0.5 }}>{order.listing?.quantity || 0} {t('market.tons_of', 'Tons of')} {order.listing?.residueType || 'Biomass'}</Text>
+                <Text style={{ color: '#64748b', fontWeight: '600', marginBottom: 24, fontSize: 14 }}>{t('market.buyer', 'Buyer')}: {order.buyer?.companyDetails?.businessName}</Text>
                 
-                <View style={{ padding: 20 }}>
-                  <Text style={{ fontSize: 20, fontWeight: '900', color: '#111827', marginBottom: 4 }}>{order.listing?.quantity || 0} Tons of {order.listing?.residueType || 'Biomass'}</Text>
-                  <Text style={{ color: '#6b7280', fontWeight: '500', marginBottom: 20, fontSize: 14 }}>Buyer: {order.buyer?.companyDetails?.businessName || 'Corporate Buyer'}</Text>
-                  
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#4b5563', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>Enter Driver's OTP</Text>
-                  <View style={{ flexDirection: 'row', gap: 12 }}>
-                    <TextInput 
-                      style={{ flex: 1, backgroundColor: '#f9fafb', borderWidth: 2, borderColor: '#e5e7eb', borderRadius: 12, textAlign: 'center', fontSize: 24, letterSpacing: 6, fontWeight: '900', color: '#111827' }}
-                      maxLength={6} keyboardType="numeric" placeholder="••••••"
-                      value={otpInput[order._id] || ''} onChangeText={(val) => setOtpInput({...otpInput, [order._id]: val.replace(/\D/g, '')})}
-                    />
-                    <TouchableOpacity onPress={() => handleVerifyOTP(order._id)} style={{ backgroundColor: '#ea580c', justifyContent: 'center', paddingHorizontal: 24, borderRadius: 12 }}>
-                      <Text style={{ color: '#ffffff', fontWeight: '900', fontSize: 16 }}>Verify</Text>
-                    </TouchableOpacity>
-                  </View>
+                <Text style={{ fontSize: 10, fontWeight: '800', color: '#94a3b8', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 }}>{t('market.enter_driver_otp', "Enter Driver's OTP to Release Funds")}</Text>
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                  <TextInput 
+                    style={{ flex: 1, backgroundColor: '#f8fafc', borderWidth: 2, borderColor: '#e2e8f0', borderRadius: 20, textAlign: 'center', fontSize: 24, letterSpacing: 8, fontWeight: '900', color: '#0f172a' }}
+                    maxLength={6} keyboardType="numeric" placeholder="••••••"
+                    value={otpInput[order._id] || ''} onChangeText={(val) => setOtpInput({...otpInput, [order._id]: val.replace(/\D/g, '')})}
+                  />
+                  <TouchableOpacity onPress={() => handleVerifyOTP(order._id)} style={{ backgroundColor: '#ea580c', justifyContent: 'center', paddingHorizontal: 24, borderRadius: 20, elevation: 3 }}>
+                    <Text style={{ color: '#ffffff', fontWeight: '900', fontSize: 16 }}>{t('market.verify', 'Verify')}</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             ))}
           </View>
-        ) : null}
-
-        {/* ZONE 3: ACTIVE INVENTORY */}
-        <View style={{ marginBottom: 32 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-            <Package size={14} color="#6b7280" style={{ marginRight: 6 }}/>
-            <Text style={{ fontSize: 14, fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5 }}>Active Inventory</Text>
-          </View>
-          
-          {unbookedListings.length === 0 ? (
-            <View style={{ backgroundColor: '#ffffff', borderRadius: 24, borderWidth: 1, borderColor: '#e5e7eb', borderStyle: 'dashed', padding: 32, alignItems: 'center' }}>
-              <Text style={{ color: '#9ca3af', fontWeight: '500' }}>No active listings on the market.</Text>
-            </View>
-          ) : (
-            unbookedListings.map(listing => (
-              <View key={listing._id} style={{ backgroundColor: '#ffffff', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: '#e5e7eb', marginBottom: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <View>
-                  <View style={{ backgroundColor: '#f3f4f6', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, alignSelf: 'flex-start', marginBottom: 4 }}><Text style={{ fontSize: 10, fontWeight: '700', color: '#4b5563', textTransform: 'uppercase', letterSpacing: 0.5 }}>{listing.residueType}</Text></View>
-                  <Text style={{ fontSize: 18, fontWeight: '900', color: '#111827' }}>{listing.quantity} <Text style={{ fontSize: 12, color: '#6b7280', fontWeight: '500' }}>Tons</Text></Text>
-                </View>
-                <View style={{ alignItems: 'flex-end' }}>
-                  <Text style={{ fontSize: 10, color: '#9ca3af', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>Asking</Text>
-                  <Text style={{ fontSize: 16, fontWeight: '900', color: '#111827' }}>₹{listing.pricePerTon}</Text>
-                </View>
-              </View>
-            ))
-          )}
-        </View>
-
-        {/* ZONE 4: COMPLETED HISTORY */}
-        {completedPickups.length > 0 ? (
-          <View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-              <History size={14} color="#6b7280" style={{ marginRight: 6 }}/>
-              <Text style={{ fontSize: 14, fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5 }}>Transaction History</Text>
-            </View>
-            {completedPickups.map(order => (
-              <View key={order._id} style={{ backgroundColor: '#ffffff', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: '#f3f4f6', marginBottom: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', opacity: 0.8 }}>
-                <View>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 }}><CheckCircle2 size={12} color="#16a34a" /><Text style={{ fontSize: 10, fontWeight: '700', color: '#15803d', textTransform: 'uppercase', letterSpacing: 0.5 }}>Paid</Text></View>
-                  <Text style={{ fontWeight: '700', color: '#111827', fontSize: 14 }}>{order.listing?.quantity || 0}T {order.listing?.residueType || 'Unknown'}</Text>
-                </View>
-                <Text style={{ fontSize: 18, fontWeight: '900', color: '#16a34a' }}>+₹{order.totalAmount?.toLocaleString()}</Text>
-              </View>
-            ))}
-          </View>
-        ) : null}
+        )}
 
       </ScrollView>
     </SafeAreaView>

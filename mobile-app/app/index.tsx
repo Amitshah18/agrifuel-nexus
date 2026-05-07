@@ -22,17 +22,17 @@ export default function Index() {
           if (!actualUserType) {
             await AsyncStorage.removeItem('af_token');
             await AsyncStorage.removeItem('af_user');
-            setRoute('/login');
+            setRoute('/welcome'); // <-- Changed from /login
           } else if (actualUserType === 'buyer') {
             setRoute('/(business)');
           } else {
             setRoute('/(dashboard)');
           }
         } else {
-          setRoute('/login');
+          setRoute('/welcome'); // <-- Changed from /login
         }
       } catch (e) {
-        setRoute('/login');
+        setRoute('/welcome'); // <-- Changed from /login
       } finally {
         setIsReady(true);
       }
@@ -43,7 +43,7 @@ export default function Index() {
 
   if (!isReady || !route) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#15803d' }}>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#059669' }}>
         <ActivityIndicator size="large" color="#ffffff" />
       </View>
     );

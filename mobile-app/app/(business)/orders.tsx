@@ -1,13 +1,15 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MapPin, Map as MapIcon, KeyRound, CheckCircle2 } from 'lucide-react-native';
+import { MapPin, Map as MapIcon, KeyRound, CheckCircle2, PackageOpen, User } from 'lucide-react-native';
 import { useFocusEffect } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import api from '../../src/services/api';
 
 export default function BusinessOrdersScreen() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const { t } = useTranslation();
 
   useFocusEffect(
     useCallback(() => { fetchOrders(); }, [])
@@ -16,73 +18,102 @@ export default function BusinessOrdersScreen() {
   const fetchOrders = async () => {
     try {
       const res = await api.get('/transactions/buyer/orders');
-      setOrders(res.data);
+      if (Array.isArray(res.data)) {
+        setOrders(res.data);
+      }
     } catch (error) { console.error(error); } finally { setLoading(false); }
   };
 
-  if (loading) return <View className="flex-1 items-center justify-center"><ActivityIndicator color="#2563eb" /></View>;
+  if (loading) return <View style={{ flex: 1, backgroundColor: '#FAFCFF', alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator size="large" color="#059669" /></View>;
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>
-      <View className="px-6 py-4 bg-white border-b border-gray-100"><Text className="text-2xl font-extrabold text-gray-900">Active Pickups</Text></View>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#FAFCFF' }} edges={['top']}>
+      
+      <View style={{ paddingHorizontal: 24, paddingVertical: 20, backgroundColor: '#ffffff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
+        <Text style={{ fontSize: 26, fontWeight: '900', color: '#022c22', letterSpacing: -0.5 }}>{t('market.active_pickups', 'Active Pickups')}</Text>
+        <Text style={{ fontSize: 13, color: '#64748b', fontWeight: '600', marginTop: 4 }}>{t('market.manage_logistics', 'Manage logistics and securely release escrow.')}</Text>
+      </View>
 
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
-        {orders.map((order) => {
-          const farmer = order.farmer || {};
-          const address = farmer.address || {};
+      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
+        
+        {orders.length === 0 ? (
+          <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 64, backgroundColor: '#ffffff', borderRadius: 32, borderWidth: 1, borderColor: '#f1f5f9', borderStyle: 'dashed' }}>
+            <PackageOpen color="#cbd5e1" size={48} style={{ marginBottom: 16 }} />
+            <Text style={{ fontWeight: '900', color: '#0f172a', fontSize: 18, marginBottom: 8 }}>{t('market.no_pickups', 'No Active Pickups')}</Text>
+            <Text style={{ fontWeight: '600', color: '#94a3b8', fontSize: 14 }}>{t('market.no_pickups_desc', "You don't have any pending orders.")}</Text>
+          </View>
+        ) : (
+          orders.map((order) => {
+            const farmer = order.farmer || {};
+            const listing = order.listing || {};
+            const address = farmer.address || {};
+            const isCompleted = order.status === 'completed';
 
-          return (
-            <View key={order._id} className="bg-white rounded-3xl border border-gray-100 shadow-sm mb-6 overflow-hidden">
-              <View className={`p-4 border-b flex-row justify-between items-center ${order.status === 'completed' ? 'bg-green-50 border-green-100' : 'bg-blue-50 border-blue-100'}`}>
-                <Text className={`font-bold uppercase text-xs ${order.status === 'completed' ? 'text-green-800' : 'text-blue-800'}`}>
-                  {order.status === 'completed' ? 'Collected' : 'Pending Pickup'}
-                </Text>
-                <Text className="font-black text-lg">₹{order.totalAmount}</Text>
-              </View>
-
-              <View className="p-5">
-                <Text className="text-xl font-bold text-gray-900 mb-3">{order.listing?.quantity || 0} Tons of {order.listing?.residueType || 'Biomass'}</Text>
+            return (
+              <View key={order._id} style={{ backgroundColor: '#ffffff', borderRadius: 32, borderWidth: 1, borderColor: '#f1f5f9', shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.03, shadowRadius: 20, elevation: 3, marginBottom: 24, overflow: 'hidden' }}>
                 
-                <View className="flex-row items-start mb-4">
-                  <MapPin size={18} color="#9ca3af" className="mt-1 mr-2" />
-                  <View className="flex-1">
-                    <Text className="font-bold text-gray-900">{farmer.fullName || 'Unknown'} ({farmer.mobile || 'N/A'})</Text>
-                    <Text className="text-gray-600 text-sm">{address.village || 'Unknown Location'}, Tehsil: {address.tehsil}</Text>
-                    <Text className="text-gray-600 text-sm">{address.district}, {address.state} - {address.pincode}</Text>
+                {/* Header */}
+                <View style={{ padding: 20, borderBottomWidth: 1, borderBottomColor: '#f1f5f9', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: isCompleted ? '#f0fdf4' : '#f8fafc' }}>
+                  <View style={{ backgroundColor: isCompleted ? '#dcfce7' : '#e2e8f0', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}>
+                    <Text style={{ fontWeight: '900', fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, color: isCompleted ? '#16a34a' : '#475569' }}>
+                      {isCompleted ? t('market.collected', 'Collected') : t('market.pending_pickup', 'Pending Pickup')}
+                    </Text>
                   </View>
+                  <Text style={{ fontWeight: '900', fontSize: 20, color: '#022c22' }}>₹{order.totalAmount.toLocaleString()}</Text>
                 </View>
 
-                {order.status === 'funds_in_escrow' && (
-                  <View className="bg-gray-900 p-5 rounded-2xl flex-row justify-between items-center mt-2">
-                    <View>
-                      <Text className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Pickup OTP</Text>
-                      <Text className="text-white text-3xl font-black tracking-widest">{order.pickupOTP}</Text>
+                <View style={{ padding: 24 }}>
+                  <Text style={{ fontSize: 28, fontWeight: '900', color: '#022c22', marginBottom: 20, letterSpacing: -1 }}>{listing.quantity || 0}<Text style={{ fontSize: 16, color: '#64748b' }}>T</Text> <Text style={{ fontSize: 20 }}>{listing.residueType || 'Biomass'}</Text></Text>
+                  
+                  <View style={{ backgroundColor: '#f8fafc', padding: 16, borderRadius: 20, borderWidth: 1, borderColor: '#f1f5f9', marginBottom: 24 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: '#e2e8f0' }}>
+                      <View style={{ height: 32, width: 32, borderRadius: 10, backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#e2e8f0', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}><User size={16} color="#64748b" /></View>
+                      <View>
+                        <Text style={{ fontWeight: '900', color: '#0f172a', fontSize: 16 }}>{farmer.fullName || 'Unknown'}</Text>
+                        <Text style={{ color: '#64748b', fontSize: 12, fontWeight: '700' }}>{farmer.mobile || 'N/A'}</Text>
+                      </View>
                     </View>
-                    <KeyRound size={28} color="#3b82f6" />
+                    
+                    <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+                      <MapPin size={18} color="#059669" style={{ marginTop: 2, marginRight: 12 }} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ color: '#475569', fontSize: 14, fontWeight: '600' }}>{address.village || 'Unknown Village'}, {address.tehsil}</Text>
+                        <Text style={{ color: '#475569', fontSize: 14, fontWeight: '600' }}>{address.district}, {address.state} - {address.pincode}</Text>
+                      </View>
+                    </View>
                   </View>
-                )}
 
-                {order.status === 'completed' && (
-                  <View className="bg-green-50 p-4 rounded-xl flex-row items-center gap-2 mt-2">
-                    <CheckCircle2 color="#16a34a" size={20}/>
-                    <Text className="text-green-800 font-bold">Handover Successful</Text>
-                  </View>
-                )}
+                  {!isCompleted && (
+                    <View style={{ backgroundColor: '#022c22', padding: 24, borderRadius: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, shadowColor: '#064e3b', shadowOffset: {width: 0, height: 8}, shadowOpacity: 0.2, shadowRadius: 15, elevation: 5 }}>
+                      <View>
+                        <Text style={{ color: '#a7f3d0', fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>{t('market.pickup_otp', 'Pickup OTP')}</Text>
+                        <Text style={{ color: '#ffffff', fontSize: 36, fontWeight: '900', letterSpacing: 8 }}>{order.pickupOTP}</Text>
+                      </View>
+                      <KeyRound size={36} color="#34d399" />
+                    </View>
+                  )}
+
+                  {isCompleted && (
+                    <View style={{ backgroundColor: '#f0fdf4', padding: 20, borderRadius: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 16, borderWidth: 1, borderColor: '#dcfce7' }}>
+                      <CheckCircle2 color="#059669" size={24} style={{ marginRight: 12 }}/>
+                      <Text style={{ color: '#047857', fontWeight: '900', fontSize: 16 }}>{t('market.handover_success', 'Handover Successful')}</Text>
+                    </View>
+                  )}
+
+                  {!isCompleted && listing?.location?.coordinates && (
+                    <TouchableOpacity 
+                      onPress={() => Linking.openURL(`http://maps.google.com/?q=${listing.location.coordinates.lat},${listing.location.coordinates.lng}`)}
+                      style={{ backgroundColor: '#f1f5f9', paddingVertical: 18, borderRadius: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      <MapIcon color="#0f172a" size={18} style={{ marginRight: 8 }} />
+                      <Text style={{ color: '#0f172a', fontWeight: '900', fontSize: 16 }}>{t('market.navigate', 'Navigate to Farm')}</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
-
-              {/* FIXED: Official Google Maps Search URL format */}
-              {order.status !== 'completed' && order.listing?.location?.coordinates && (
-                <TouchableOpacity 
-                  onPress={() => Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${order.listing.location.coordinates.lat},${order.listing.location.coordinates.lng}`)}
-                  className="bg-blue-600 p-4 flex-row justify-center items-center gap-2 active:bg-blue-700"
-                >
-                  <MapIcon color="white" size={18} />
-                  <Text className="text-white font-bold text-base">Navigate to Farm</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          );
-        })}
+            );
+          })
+        )}
       </ScrollView>
     </SafeAreaView>
   );

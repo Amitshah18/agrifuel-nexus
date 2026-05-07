@@ -3,8 +3,9 @@
 // Determine the base URL based on the environment.
 // In Vite, import.meta.env.DEV is true during local development.
 // You can also use a .env file to set VITE_API_URL.
-const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : '');
+//const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : '');
 
+const API_BASE_URL = 'https://agrifuel-backend.onrender.com';
 export const api = {
   // --- Helper to get headers ---
   getHeaders: () => {

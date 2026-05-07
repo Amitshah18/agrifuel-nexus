@@ -1,11 +1,13 @@
 import { Tabs, router } from 'expo-router';
-import { Home, Truck, UserCircle } from 'lucide-react-native';
+import { Store, Truck, BarChart3, UserCircle } from 'lucide-react-native';
 import { Platform, View, ActivityIndicator } from 'react-native';
 import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTranslation } from 'react-i18next';
 
 export default function BusinessLayout() {
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -31,28 +33,46 @@ export default function BusinessLayout() {
     checkAccess();
   }, []);
 
-  if (!isAuthorized) return <View style={{ flex: 1, backgroundColor: '#f9fafb', alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color="#2563eb" size="large" /></View>;
+  if (!isAuthorized) return <View style={{ flex: 1, backgroundColor: '#FAFCFF', alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color="#059669" size="large" /></View>;
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#2563eb',
-        tabBarInactiveTintColor: '#9ca3af',
+        tabBarActiveTintColor: '#059669',
+        tabBarInactiveTintColor: '#94a3b8',
         tabBarStyle: {
           backgroundColor: '#ffffff',
           borderTopWidth: 1,
-          borderTopColor: '#f3f4f6',
+          borderTopColor: '#f1f5f9',
           height: Platform.OS === 'ios' ? 85 : 65,
           paddingBottom: Platform.OS === 'ios' ? 25 : 10,
           paddingTop: 10,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -10 },
+          shadowOpacity: 0.03,
+          shadowRadius: 20,
+          elevation: 10,
         },
-        tabBarLabelStyle: { fontSize: 12, fontWeight: 'bold', marginTop: 2 },
+        tabBarLabelStyle: { fontSize: 10, fontWeight: '800', marginTop: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: 'Market', tabBarIcon: ({ color }) => <Home color={color} size={24} /> }} />
-      <Tabs.Screen name="orders" options={{ title: 'Pickups', tabBarIcon: ({ color }) => <Truck color={color} size={24} /> }} />
-      <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: ({ color }) => <UserCircle color={color} size={24} /> }} />
+      <Tabs.Screen 
+        name="index" 
+        options={{ title: t('tabs.market', 'Market'), tabBarIcon: ({ color }) => <Store color={color} size={24} /> }} 
+      />
+      <Tabs.Screen 
+        name="orders" 
+        options={{ title: t('tabs.pickups', 'Pickups'), tabBarIcon: ({ color }) => <Truck color={color} size={24} /> }} 
+      />
+      <Tabs.Screen 
+        name="analytics" 
+        options={{ title: t('tabs.analytics', 'Analytics'), tabBarIcon: ({ color }) => <BarChart3 color={color} size={24} /> }} 
+      />
+      <Tabs.Screen 
+        name="profile" 
+        options={{ title: t('tabs.profile', 'Profile'), tabBarIcon: ({ color }) => <UserCircle color={color} size={24} /> }} 
+      />
     </Tabs>
   );
 }
