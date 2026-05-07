@@ -75,8 +75,8 @@ export const analyzeCrop = async (req: Request, res: Response): Promise<void> =>
       try {
         const llmResponse = await groq.chat.completions.create({
           messages: [{ role: "user", content: prompt }],
-          model: "llama3-8b-8192", 
-          temperature: 0.1, // Dropped to 0.1 for maximum rigid formatting
+          model: "llama-3.1-8b-instant", // <-- THE NEW, ACTIVE MODEL
+          temperature: 0.1, 
           response_format: { type: "json_object" }, 
         });
         
