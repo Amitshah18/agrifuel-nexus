@@ -4,6 +4,7 @@ import {
   ArrowLeft, CheckCircle2, ChevronRight, Leaf, Building2, 
   MapPin, User, ShieldCheck, FileText, AlertCircle, Zap, Shield, Factory
 } from "lucide-react";
+import agrifuelLogo from '@/assets/agrifuel_nexus_logo_no-background.png';
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -104,8 +105,12 @@ export default function Signup() {
         {/* Branding */}
         <div className="relative z-10">
           <Link to="/" className="text-3xl font-black text-white flex items-center gap-3 tracking-tighter">
-            <div className="bg-gradient-to-tr from-emerald-500 to-teal-400 p-2.5 rounded-xl shadow-lg shadow-emerald-900/50">
-              <Leaf className="h-7 w-7 text-white" />
+            <div>
+              <img 
+                src={agrifuelLogo}
+                alt="Background"
+                className="h-14 w-14"
+              />
             </div>
             AgriFuel Nexus
           </Link>

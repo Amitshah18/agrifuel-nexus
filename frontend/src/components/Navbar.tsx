@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Search, Bell, Settings as SettingsIcon, User, LogOut, Globe, Leaf, Menu } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
+import agrifuelLogo from "@/assets/agrifuel_nexus_logo.png"
 import { useLanguage, SUPPORTED_LANGUAGES } from "../context/LanguageContext"; 
 
 interface NavbarProps {
@@ -53,8 +54,12 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
           </button>
           
           <Link to={isFarmer ? "/dashboard" : "/business"} className="flex items-center gap-2">
-            <div className="bg-[#16a34a] p-1.5 rounded-xl shadow-sm">
-              <Leaf className="h-5 w-5 text-white" />
+            <div>
+              <img 
+                src={agrifuelLogo}
+                alt="Background"
+                className="h-14 w-14"
+              />
             </div>
             <span className="font-black text-xl tracking-tight text-[#1A2E19] hidden sm:block">AgriFuel Nexus</span>
           </Link>

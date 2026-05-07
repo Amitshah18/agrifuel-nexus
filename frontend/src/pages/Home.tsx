@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom'; 
 import farmImg from '@/assets/homePic.png';
+import agrifuelLogo from '@/assets/agrifuel_nexus_logo_no-background.png'
 import {
   Card,
   CardHeader,
@@ -37,10 +38,14 @@ export default function Home() {
             }`}>
                 <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
                     <div className="flex items-center gap-2 cursor-pointer group">
-                        <div className="bg-[#10b981] p-2 rounded-xl shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform">
-                            <Leaf className="h-5 w-5 text-white" />
+                        <div>
+                            <img
+                                src={agrifuelLogo}
+                                alt='logo'
+                                className="h-18 w-18" 
+                            />
                         </div>
-                        <span className="font-extrabold text-2xl tracking-tight text-slate-900">AgriFuel Nexus</span>
+                        <span className="font-extrabold text-3xl tracking-tight text-slate-900">AgriFuel Nexus</span>
                     </div>
                     <div className="flex items-center gap-6">
                         <Link to="/login" className="text-sm font-bold text-slate-600 hover:text-emerald-600 transition-colors hidden md:block">
@@ -95,7 +100,7 @@ export default function Home() {
                             <img 
                                 src={farmImg}
                                 alt="AgriFuel Nexus Ecosystem"
-                                className="w-full h-auto object-cover rounded-[2rem] shadow-inner"
+                                className="w-full h-auto object-cover rounded-4xl shadow-inner"
                             />
                         </div>
                     </div>
@@ -417,7 +422,11 @@ export default function Home() {
             <footer className="bg-slate-50 border-t border-slate-200 py-12 px-6">
                 <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
                     <div className="flex items-center gap-2 cursor-pointer">
-                        <Leaf className="h-5 w-5 text-emerald-600" />
+                        <img
+                            src={agrifuelLogo}
+                            alt='logo'
+                            className="h-14 w-14" 
+                        />
                         <span className="font-extrabold text-xl tracking-tight text-slate-900">AgriFuel Nexus</span>
                     </div>
                     <div className="text-sm font-bold text-slate-500 flex flex-wrap justify-center gap-6">
