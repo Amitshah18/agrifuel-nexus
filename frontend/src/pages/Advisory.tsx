@@ -78,11 +78,13 @@ export default function Advisory() {
     const processAnalysis = async (lat: string, lng: string) => {
       try {
         const formData = new FormData();
-        formData.append('file', fileToUpload);
+        formData.append('language', i18n.language || 'English'); 
         formData.append('latitude', lat);
         formData.append('longitude', lng);
         formData.append('date', new Date().toISOString());
-        formData.append('language', i18n.language);
+        
+        // Append the file LAST
+        formData.append('file', fileToUpload);
 
         const token = localStorage.getItem('af_token') || '';
         

@@ -14,6 +14,7 @@ export const analyzeCrop = async (req: Request, res: Response): Promise<void> =>
     }
 
     const { latitude, longitude, date, language = 'Hindi' } = req.body;
+    console.log(`Requested Language: ${language}`)
 
     // ==========================================
     // 1. FORWARD IMAGE TO PYTHON AI (Hugging Face)
