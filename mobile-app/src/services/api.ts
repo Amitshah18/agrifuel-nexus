@@ -4,8 +4,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Ensure 192.168.1.14 is still your CURRENT Wi-Fi IPv4 Address!
 const BASE_URL = Platform.OS === 'android' 
-  ? 'http://192.168.1.2:5000/api' 
-  : 'http://localhost:5000/api';
+  ? 'https://agrifuel-nexus-backend.onrender.com/api'//'http://192.168.1.2:5000/api' 
+  : 'http://192.168.1.2:5000/api';
 
 const api = axios.create({
   baseURL: BASE_URL,

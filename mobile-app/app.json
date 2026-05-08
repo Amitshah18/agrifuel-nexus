@@ -22,7 +22,8 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.amitshah.agrifuelnexus"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -30,6 +31,12 @@
     "plugins": [
       "expo-router",
       "expo-localization"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "a10f819a-16d6-4c53-8d9c-d6cbb9ea87d0"
+      }
+    }
   }
 }

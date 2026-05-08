@@ -71,7 +71,7 @@ export default function DetectionScreen() {
       formData.append('language', i18n.language); 
 
       const token = await AsyncStorage.getItem('af_token');
-      const response = await fetch('http://192.168.1.5:5000/api/advisory/analyze', {
+      const response = await fetch('https://agrifuel-nexus-backend.onrender.com/api/advisory/analyze', {
         method: 'POST', headers: { 'Accept': 'application/json', 'Authorization': `Bearer ${token}` }, body: formData,
       });
 
